@@ -1,0 +1,23 @@
+# Xcode user-specific settings
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
+
+# Build products
+build/
+DerivedData/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Xcode generated indexes/logs
+*.moved-aside
+*.xcscmblueprint
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.swp
+*.tmp
