@@ -27,11 +27,10 @@ final class HomeViewModel {
     }
 
     func markDone() {
-        guard var thing else {
+        guard let thing else {
             return
         }
 
         thing.status = .done
-        self.thing = thing
     }
 }
