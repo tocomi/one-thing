@@ -31,7 +31,7 @@ final class HomeViewModel {
             return
         }
 
-        thing.isDone = true
+        thing.status = .done
         self.thing = thing
     }
 }
