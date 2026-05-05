@@ -1,7 +1,7 @@
 import Foundation
 
 struct DayBoundaryUseCase {
-    static let defaultBoundaryHour = 4
+    nonisolated static let defaultBoundaryHour = 4
 
     private let calendar: Calendar
 
