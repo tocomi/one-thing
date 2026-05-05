@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 
+/// HomeView の表示状態を保持し、ユースケースを通じて今日の Thing を読み込む。
 @MainActor
 @Observable
 final class HomeViewModel {
@@ -10,10 +11,12 @@ final class HomeViewModel {
 
     private let loadOneThingUseCase: LoadOneThingUseCase
 
+    /// HomeView で必要な読み込みユースケースを受け取る。
     init(loadOneThingUseCase: LoadOneThingUseCase) {
         self.loadOneThingUseCase = loadOneThingUseCase
     }
 
+    /// 今日の Thing を読み込み、画面表示用の状態に反映する。
     func load() async {
         isLoading = true
         errorMessage = nil
@@ -26,6 +29,7 @@ final class HomeViewModel {
         }
     }
 
+    /// 現在表示中の Thing を完了状態へ変更する。
     func markDone() {
         guard let thing else {
             return

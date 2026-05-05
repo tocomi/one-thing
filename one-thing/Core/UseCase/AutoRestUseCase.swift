@@ -1,10 +1,12 @@
 import Foundation
 
+/// 前日の未完了タスクを自動的に休息扱いへ更新するユースケース。
 struct AutoRestUseCase {
     private let repository: ThingRepository
     private let dayBoundaryUseCase: DayBoundaryUseCase
     private let calendar: Calendar
 
+    /// タスク保存先、日付境界の判定、日付計算に使う Calendar を受け取る。
     init(
         repository: ThingRepository,
         dayBoundaryUseCase: DayBoundaryUseCase = DayBoundaryUseCase(),
@@ -15,6 +17,7 @@ struct AutoRestUseCase {
         self.calendar = calendar
     }
 
+    /// 今日の境界から見た前日の未完了タスクがあれば rested に変更する。
     @discardableResult
     func execute(
         now: Date = Date(),

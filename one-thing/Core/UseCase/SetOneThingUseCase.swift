@@ -1,9 +1,11 @@
 import Foundation
 
+/// 今日取り組む「ひとつのこと」を登録または更新するユースケース。
 struct SetOneThingUseCase {
     private let repository: ThingRepository
     private let dayBoundaryUseCase: DayBoundaryUseCase
 
+    /// タスク保存先と日付境界の判定ロジックを受け取る。
     init(
         repository: ThingRepository,
         dayBoundaryUseCase: DayBoundaryUseCase = DayBoundaryUseCase()
@@ -12,6 +14,7 @@ struct SetOneThingUseCase {
         self.dayBoundaryUseCase = dayBoundaryUseCase
     }
 
+    /// 今日の Thing があれば内容を更新し、なければ新規作成する。
     func execute(
         title: String,
         now: Date = Date(),
