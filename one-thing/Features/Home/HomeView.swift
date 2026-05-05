@@ -40,6 +40,9 @@ struct HomeView: View {
                 Text(thing.isDone ? "Done" : "Not done")
                     .foregroundStyle(.secondary)
             }
+        } else {
+            Text("今日はまだ決まっていません")
+                .foregroundStyle(.secondary)
         }
     }
 }

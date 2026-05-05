@@ -9,22 +9,6 @@ struct SwiftDataThingRepository: ThingRepository {
         self.modelContext = modelContext
     }
 
-    func fetchCurrentThing() async throws -> Thing {
-        var descriptor = FetchDescriptor<Thing>(
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        descriptor.fetchLimit = 1
-
-        if let thing = try modelContext.fetch(descriptor).first {
-            return thing
-        }
-
-        let thing = Thing(title: "Write one thing")
-        modelContext.insert(thing)
-        try modelContext.save()
-        return thing
-    }
-
     func fetchThing(on date: Date) async throws -> Thing? {
         var descriptor = FetchDescriptor<Thing>(
             predicate: #Predicate { thing in
@@ -34,6 +18,17 @@ struct SwiftDataThingRepository: ThingRepository {
         descriptor.fetchLimit = 1
 
         return try modelContext.fetch(descriptor).first
+    }
+
+    func fetchThings(from startDate: Date, to endDate: Date) async throws -> [Thing] {
+        let descriptor = FetchDescriptor<Thing>(
+            predicate: #Predicate { thing in
+                startDate <= thing.date && thing.date < endDate
+            },
+            sortBy: [SortDescriptor(\.date)]
+        )
+
+        return try modelContext.fetch(descriptor)
     }
 
     func createThing(date: Date, title: String, status: ThingStatus) async throws -> Thing {
