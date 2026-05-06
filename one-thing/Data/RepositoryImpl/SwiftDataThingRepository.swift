@@ -47,4 +47,16 @@ struct SwiftDataThingRepository: ThingRepository {
     func saveChanges() async throws {
         try modelContext.save()
     }
+
+    /// SwiftData に保存されている Thing をすべて削除する。
+    func deleteAllThings() async throws {
+        let descriptor = FetchDescriptor<Thing>()
+        let things = try modelContext.fetch(descriptor)
+
+        for thing in things {
+            modelContext.delete(thing)
+        }
+
+        try modelContext.save()
+    }
 }

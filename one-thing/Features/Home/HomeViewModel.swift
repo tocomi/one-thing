@@ -13,6 +13,7 @@ final class HomeViewModel {
 
     private let loadOneThingUseCase: LoadOneThingUseCase
     private let setOneThingUseCase: SetOneThingUseCase
+    private let resetThingDataUseCase: ResetThingDataUseCase
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
 
@@ -20,10 +21,12 @@ final class HomeViewModel {
     init(
         loadOneThingUseCase: LoadOneThingUseCase,
         setOneThingUseCase: SetOneThingUseCase,
+        resetThingDataUseCase: ResetThingDataUseCase,
         calendar: Calendar = .autoupdatingCurrent
     ) {
         self.loadOneThingUseCase = loadOneThingUseCase
         self.setOneThingUseCase = setOneThingUseCase
+        self.resetThingDataUseCase = resetThingDataUseCase
         self.calendar = calendar
 
         let formatter = DateFormatter()
@@ -76,6 +79,21 @@ final class HomeViewModel {
 
         do {
             thing = try await setOneThingUseCase.execute(title: title)
+            draftTitle = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 開発中の確認用に保存済みデータを削除し、未設定状態へ戻す。
+    func resetSavedDataForDebug() async {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+
+        do {
+            try await resetThingDataUseCase.execute()
+            thing = nil
             draftTitle = ""
         } catch {
             errorMessage = error.localizedDescription

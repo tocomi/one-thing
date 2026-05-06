@@ -13,6 +13,10 @@ struct HomeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 32) {
             content
+
+            #if DEBUG
+            debugResetButton
+            #endif
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -82,6 +86,21 @@ struct HomeView: View {
             await viewModel.submitDraft()
         }
     }
+
+    #if DEBUG
+    /// 開発中だけ表示する保存データのリセットボタン。
+    private var debugResetButton: some View {
+        Button(role: .destructive) {
+            Task {
+                await viewModel.resetSavedDataForDebug()
+            }
+        } label: {
+            Text("開発用: 保存データをリセット")
+                .font(.footnote)
+        }
+        .disabled(viewModel.isSubmitting)
+    }
+    #endif
 }
 
 #Preview {
@@ -93,6 +112,9 @@ struct HomeView: View {
                 repository: repository
             ),
             setOneThingUseCase: SetOneThingUseCase(
+                repository: repository
+            ),
+            resetThingDataUseCase: ResetThingDataUseCase(
                 repository: repository
             )
         )

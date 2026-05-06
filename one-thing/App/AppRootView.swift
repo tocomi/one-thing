@@ -18,6 +18,9 @@ struct AppRootView: View {
                 ),
                 setOneThingUseCase: SetOneThingUseCase(
                     repository: repository
+                ),
+                resetThingDataUseCase: ResetThingDataUseCase(
+                    repository: repository
                 )
             )
         )
