@@ -9,222 +9,282 @@ struct HomeView: View {
         self.viewModel = viewModel
     }
 
-    /// 今日の日付と現在のタスク状態を配置する。
     var body: some View {
         ZStack {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            Color.appBackground.ignoresSafeArea()
+            contentArea
 
             #if DEBUG
-            VStack {
-                Spacer()
-                debugResetButton
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            debugBar
             #endif
         }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task {
             await viewModel.load()
         }
+        .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.isLoading)
+        .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing == nil)
+        .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing?.status)
     }
 
-    /// 読み込み、エラー、登録済み、未登録の各状態に応じた表示を切り替える。
+    // MARK: - Content routing
+
     @ViewBuilder
-    private var content: some View {
+    private var contentArea: some View {
         if viewModel.isLoading {
             ProgressView()
+                .tint(Color.appAccent)
         } else if let errorMessage = viewModel.errorMessage {
             Text(errorMessage)
-                .foregroundStyle(.red)
+                .font(.subheadline)
+                .foregroundStyle(Color.appSecondary)
+                .multilineTextAlignment(.center)
+                .padding(32)
         } else if let thing = viewModel.thing {
             if thing.status == .inProgress {
-                inProgressContent(thing: thing)
+                inProgressView(thing: thing)
+                    .transition(.opacity)
             } else {
-                VStack(alignment: .center, spacing: 16) {
-                    dateText
-
-                    Text(thing.title)
-                        .font(.largeTitle.weight(.semibold))
-                        .multilineTextAlignment(.center)
-                    Text(thing.isDone ? "Done" : "Not done")
-                        .foregroundStyle(.secondary)
-                }
+                doneView(thing: thing)
+                    .transition(.opacity)
             }
         } else {
-            unsetContent
+            unsetView
+                .transition(.opacity)
         }
     }
 
-    /// 未設定状態の入力 UI を表示する。
-    private var unsetContent: some View {
-        VStack(alignment: .center, spacing: 24) {
-            dateText
+    // MARK: - Unset state
 
-            Text(viewModel.unsetPromptText)
-                .font(.title.weight(.semibold))
-                .multilineTextAlignment(.center)
+    /// タスクがまだ設定されていない状態の入力 UI。
+    private var unsetView: some View {
+        VStack(spacing: 0) {
+            dateLabel
+                .padding(.top, 20)
 
-            TextField("", text: $viewModel.draftTitle, axis: .vertical)
-                .font(.title2.weight(.semibold))
-                .textFieldStyle(.plain)
-                .submitLabel(.done)
-                .lineLimit(1...3)
-                .multilineTextAlignment(.leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .frame(maxWidth: 320, minHeight: 56, alignment: .leading)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.secondary.opacity(0.35), lineWidth: 1)
+            Spacer()
+
+            VStack(spacing: 20) {
+                Text(viewModel.unsetPromptText)
+                    .font(.system(size: 26, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.appPrimary)
+                    .multilineTextAlignment(.center)
+
+                draftTextField
+            }
+            .padding(.horizontal, 32)
+
+            Spacer()
+
+            PrimaryActionButton(title: "決めた！") {
+                submitDraft()
+            }
+            .disabled(!viewModel.canSubmitDraft || viewModel.isSubmitting)
+            .padding(.horizontal, 32)
+            .padding(.bottom, 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var draftTextField: some View {
+        ThingTextField(placeholder: "今日やること...", text: $viewModel.draftTitle) {
+            submitDraft()
+        }
+    }
+
+    // MARK: - In-progress state
+
+    /// タスクが設定済みで完了前の状態。
+    private func inProgressView(thing: Thing) -> some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 8) {
+                dateLabel
+                if let streakText = viewModel.streakText {
+                    streakBadge(text: streakText)
                 }
-                .onSubmit {
-                    submitDraft()
-                }
+            }
+            .padding(.top, 20)
 
-            if viewModel.canSubmitDraft {
-                PrimaryActionButton(title: "決めた！") {
-                    submitDraft()
+            Spacer()
+
+            Group {
+                if viewModel.isEditingTitle {
+                    editingView
+                        .transition(.opacity)
+                } else {
+                    taskHero(thing: thing)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.spring(duration: 0.32, bounce: 0.0), value: viewModel.isEditingTitle)
+
+            Spacer()
+
+            if !viewModel.isEditingTitle {
+                PrimaryActionButton(title: "できた！") {
+                    completeThing()
                 }
                 .disabled(viewModel.isSubmitting)
+                .padding(.horizontal, 32)
+                .padding(.bottom, 8)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// 今日の Thing を決めた後、完了までの進行中状態を表示する。
-    private func inProgressContent(thing: Thing) -> some View {
-        VStack(alignment: .center, spacing: 32) {
-            VStack(alignment: .center, spacing: 8) {
-                dateText
-
-                if let streakText = viewModel.streakText {
-                    Text(streakText)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if viewModel.isEditingTitle {
-                editingTitleField
-            } else {
-                inProgressTitle(thing: thing)
-            }
-
-            PrimaryActionButton(title: "できた！") {
-                completeThing()
-            }
-            .disabled(viewModel.isSubmitting || viewModel.isEditingTitle)
-        }
-    }
-
-    /// 進行中の Thing を見出しと編集操作つきで表示する。
-    private func inProgressTitle(thing: Thing) -> some View {
-        VStack(alignment: .center, spacing: 10) {
-            HStack(spacing: 8) {
+    /// タスクタイトルをヒーローとして大きく表示し、編集ボタンを添える。
+    private func taskHero(thing: Thing) -> some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 6) {
                 Text("今日のやること")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .font(.system(.subheadline, design: .rounded, weight: .medium))
+                    .foregroundStyle(Color.appSecondary)
+                    .tracking(0.3)
 
                 Button {
                     viewModel.startEditingTitle()
                 } label: {
-                    Image(systemName: "pencil")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
+                    Image(systemName: "pencil.circle.fill")
+                        .font(.system(size: 17))
+                        .foregroundStyle(Color.appAccent.opacity(0.65))
+                        .frame(width: 34, height: 34)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("編集")
             }
 
+            Rectangle()
+                .fill(Color.appDivider)
+                .frame(maxWidth: 180, maxHeight: 1)
+
             Text(thing.title)
-                .font(.largeTitle.weight(.semibold))
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.appPrimary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
+                .lineSpacing(6)
+                .frame(maxWidth: 380)
         }
+        .padding(.horizontal, 32)
     }
 
-    /// 進行中のタイトルを編集する入力欄を表示する。
-    private var editingTitleField: some View {
-        VStack(alignment: .center, spacing: 12) {
+    /// 進行中タスクのタイトルを編集する入力欄と操作ボタン。
+    private var editingView: some View {
+        VStack(spacing: 20) {
             Text("今日のやること")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+                .font(.system(.subheadline, design: .rounded, weight: .medium))
+                .foregroundStyle(Color.appSecondary)
+                .tracking(0.3)
 
-            TextField("", text: $viewModel.editingTitle, axis: .vertical)
-                .font(.largeTitle.weight(.semibold))
-                .textFieldStyle(.plain)
-                .submitLabel(.done)
-                .lineLimit(1...3)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .frame(maxWidth: 420, minHeight: 72)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(.secondary.opacity(0.35), lineWidth: 1)
-                }
-                .onSubmit {
-                    saveEditingTitle()
-                }
+            ThingTextField(placeholder: "", text: $viewModel.editingTitle) {
+                saveEditingTitle()
+            }
 
-            HStack(spacing: 16) {
+            HStack(spacing: 14) {
                 Button("キャンセル") {
                     viewModel.cancelEditingTitle()
                 }
+                .font(.system(.subheadline, design: .rounded, weight: .medium))
+                .foregroundStyle(Color.appSecondary)
                 .disabled(viewModel.isSubmitting)
 
-                Button("保存") {
+                Button {
                     saveEditingTitle()
+                } label: {
+                    Text("保存")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 28)
+                        .padding(.vertical, 11)
+                        .background(Color.appAccent, in: Capsule())
                 }
+                .buttonStyle(.plain)
                 .disabled(!viewModel.canSaveEditingTitle)
             }
-            .font(.subheadline.weight(.medium))
         }
+        .padding(.horizontal, 32)
     }
 
-    /// メイン画面で共通して使う今日の日付表示。
-    private var dateText: some View {
+    // MARK: - Done state
+
+    /// タスク完了後の達成表示。
+    private func doneView(thing: Thing) -> some View {
+        VStack(spacing: 20) {
+            dateLabel
+
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(Color.appAccent)
+
+            Text(thing.title)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.appPrimary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+                .strikethrough(true, color: Color.appAccent.opacity(0.55))
+
+            Text("達成！")
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundStyle(Color.appSecondary)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Shared components
+
+    private var dateLabel: some View {
         Text(viewModel.currentDateText)
-            .font(.title3.weight(.medium))
-            .foregroundStyle(.secondary)
+            .font(.system(.title3, design: .rounded, weight: .medium))
+            .foregroundStyle(Color.appSecondary)
+            .tracking(0.3)
     }
 
-    /// 入力中の内容を非同期で保存する。
+    /// 連続達成日数を炎アイコンとともにカプセル型で表示する。
+    private func streakBadge(text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 11, weight: .semibold))
+            Text(text)
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .tracking(0.2)
+        }
+        .foregroundStyle(Color.appAccent)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.appAccentSubtle, in: Capsule())
+    }
+
+    // MARK: - Actions
+
     private func submitDraft() {
-        Task {
-            await viewModel.submitDraft()
-        }
+        Task { await viewModel.submitDraft() }
     }
 
-    /// 編集中のタイトルを非同期で保存する。
     private func saveEditingTitle() {
-        Task {
-            await viewModel.saveEditingTitle()
-        }
+        Task { await viewModel.saveEditingTitle() }
     }
 
-    /// 現在の Thing を完了状態へ非同期で保存する。
     private func completeThing() {
-        Task {
-            await viewModel.completeThing()
-        }
+        Task { await viewModel.completeThing() }
     }
+
+    // MARK: - Debug
 
     #if DEBUG
-    /// 開発中だけ表示する保存データのリセットボタン。
-    private var debugResetButton: some View {
-        Button(role: .destructive) {
-            Task {
-                await viewModel.resetSavedDataForDebug()
+    private var debugBar: some View {
+        VStack {
+            Spacer()
+            Button(role: .destructive) {
+                Task { await viewModel.resetSavedDataForDebug() }
+            } label: {
+                Text("開発用: 保存データをリセット")
+                    .font(.footnote)
             }
-        } label: {
-            Text("開発用: 保存データをリセット")
-                .font(.footnote)
+            .disabled(viewModel.isSubmitting)
+            .padding(.bottom, 16)
         }
-        .disabled(viewModel.isSubmitting)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
     }
     #endif
 }
