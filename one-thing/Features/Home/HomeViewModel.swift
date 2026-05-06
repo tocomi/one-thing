@@ -7,13 +7,19 @@ import Observation
 final class HomeViewModel {
     var thing: Thing?
     var draftTitle = ""
+    var editingTitle = ""
+    var isEditingTitle = false
+    var streakCount = 0
     var isLoading = false
     var isSubmitting = false
     var errorMessage: String?
 
     private let loadOneThingUseCase: LoadOneThingUseCase
     private let setOneThingUseCase: SetOneThingUseCase
+    private let completeOneThingUseCase: CompleteOneThingUseCase
+    private let calculateStreakUseCase: CalculateStreakUseCase
     private let resetThingDataUseCase: ResetThingDataUseCase
+    private let dayBoundaryUseCase: DayBoundaryUseCase
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
 
@@ -21,12 +27,17 @@ final class HomeViewModel {
     init(
         loadOneThingUseCase: LoadOneThingUseCase,
         setOneThingUseCase: SetOneThingUseCase,
+        completeOneThingUseCase: CompleteOneThingUseCase,
+        calculateStreakUseCase: CalculateStreakUseCase,
         resetThingDataUseCase: ResetThingDataUseCase,
         calendar: Calendar = .autoupdatingCurrent
     ) {
         self.loadOneThingUseCase = loadOneThingUseCase
         self.setOneThingUseCase = setOneThingUseCase
+        self.completeOneThingUseCase = completeOneThingUseCase
+        self.calculateStreakUseCase = calculateStreakUseCase
         self.resetThingDataUseCase = resetThingDataUseCase
+        self.dayBoundaryUseCase = DayBoundaryUseCase(calendar: calendar)
         self.calendar = calendar
 
         let formatter = DateFormatter()
@@ -53,6 +64,17 @@ final class HomeViewModel {
             && !isSubmitting
     }
 
+    /// 編集中のタイトルが保存可能な状態かどうかを返す。
+    var canSaveEditingTitle: Bool {
+        !editingTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !isSubmitting
+    }
+
+    /// 連続達成日数をメイン画面向けの文言で返す。
+    var streakText: String? {
+        streakCount > 0 ? "\(streakCount)日連続達成中" : nil
+    }
+
     /// 今日の Thing を読み込み、画面表示用の状態に反映する。
     func load() async {
         isLoading = true
@@ -61,6 +83,7 @@ final class HomeViewModel {
 
         do {
             thing = try await loadOneThingUseCase.execute()
+            try await refreshStreak()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -80,6 +103,64 @@ final class HomeViewModel {
         do {
             thing = try await setOneThingUseCase.execute(title: title)
             draftTitle = ""
+            try await refreshStreak()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 現在のタイトルを編集状態へ移す。
+    func startEditingTitle() {
+        guard let thing else {
+            return
+        }
+
+        editingTitle = thing.title
+        isEditingTitle = true
+    }
+
+    /// タイトル編集を破棄して表示状態に戻す。
+    func cancelEditingTitle() {
+        editingTitle = ""
+        isEditingTitle = false
+    }
+
+    /// 編集中のタイトルを保存して進行中状態を更新する。
+    func saveEditingTitle() async {
+        let title = editingTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else {
+            return
+        }
+
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+
+        do {
+            thing = try await setOneThingUseCase.execute(title: title)
+            editingTitle = ""
+            isEditingTitle = false
+            try await refreshStreak()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 今日の Thing を完了状態に更新する。
+    func completeThing() async {
+        guard thing != nil else {
+            return
+        }
+
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+
+        do {
+            thing = try await completeOneThingUseCase.execute()
+            isEditingTitle = false
+            editingTitle = ""
+            try await refreshStreak()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -95,17 +176,37 @@ final class HomeViewModel {
             try await resetThingDataUseCase.execute()
             thing = nil
             draftTitle = ""
+            editingTitle = ""
+            isEditingTitle = false
+            streakCount = 0
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    /// 現在表示中の Thing を完了状態へ変更する。
-    func markDone() {
-        guard let thing else {
+    /// 現在の表示状態に合わせて連続達成日数を更新する。
+    private func refreshStreak() async throws {
+        if thing?.status == .inProgress,
+           let previousDayReferenceDate {
+            streakCount = try await calculateStreakUseCase.execute(now: previousDayReferenceDate)
             return
         }
 
-        thing.status = .done
+        streakCount = try await calculateStreakUseCase.execute()
+    }
+
+    /// アプリ上の今日の前日をストリーク計算に渡すための基準日時を返す。
+    private var previousDayReferenceDate: Date? {
+        let appToday = dayBoundaryUseCase.execute()
+
+        guard let previousDay = calendar.date(byAdding: .day, value: -1, to: appToday) else {
+            return nil
+        }
+
+        return calendar.date(
+            byAdding: .hour,
+            value: DayBoundaryUseCase.defaultBoundaryHour,
+            to: previousDay
+        )
     }
 }
