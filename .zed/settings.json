@@ -1,0 +1,11 @@
+{
+  "languages": {
+    "Swift": {
+      "format_on_save": "off",
+      "hard_tabs": false,
+      "tab_size": 4,
+      "ensure_final_newline_on_save": true,
+      "remove_trailing_whitespace_on_save": true
+    }
+  }
+}
