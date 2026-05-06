@@ -30,12 +30,12 @@ final class HomeViewModel {
         self.calendar = calendar
 
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMMM d, EEEE"
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateFormat = "M月d日 (E)"
         self.dateFormatter = formatter
     }
 
-    /// 今日の日付をメイン画面向けの英語表記で返す。
+    /// 今日の日付をメイン画面向けの日本語表記で返す。
     var currentDateText: String {
         dateFormatter.string(from: Date())
     }
