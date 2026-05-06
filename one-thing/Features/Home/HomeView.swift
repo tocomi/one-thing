@@ -3,6 +3,9 @@ import SwiftUI
 /// 今日やることの状態表示と完了操作を提供するホーム画面。
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
+    #if DEBUG
+    @State private var isDebugMenuPresented = false
+    #endif
 
     /// ホーム画面で利用する ViewModel を受け取る。
     init(viewModel: HomeViewModel) {
@@ -15,12 +18,17 @@ struct HomeView: View {
             contentArea
 
             #if DEBUG
-            debugBar
+            debugMenuButton
             #endif
         }
         .task {
             await viewModel.load()
         }
+        #if DEBUG
+        .sheet(isPresented: $isDebugMenuPresented) {
+            DebugMenuView(viewModel: viewModel)
+        }
+        #endif
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.isLoading)
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing == nil)
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing?.status)
@@ -272,19 +280,26 @@ struct HomeView: View {
     // MARK: - Debug
 
     #if DEBUG
-    private var debugBar: some View {
+    private var debugMenuButton: some View {
         VStack {
-            Spacer()
-            Button(role: .destructive) {
-                Task { await viewModel.resetSavedDataForDebug() }
-            } label: {
-                Text("開発用: 保存データをリセット")
-                    .font(.footnote)
+            HStack {
+                Spacer()
+                Button {
+                    isDebugMenuPresented = true
+                } label: {
+                    Image(systemName: "wrench.and.screwdriver")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.appSecondary.opacity(0.5))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
-            .disabled(viewModel.isSubmitting)
-            .padding(.bottom, 16)
+            .padding(.top, 20)
+            .padding(.trailing, 20)
+            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
     #endif
 }
