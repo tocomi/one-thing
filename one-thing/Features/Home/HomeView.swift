@@ -142,29 +142,17 @@ struct HomeView: View {
 
     /// タスクタイトルをヒーローとして大きく表示し、編集ボタンを添える。
     private func taskHero(thing: Thing) -> some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 6) {
+        VStack(spacing: 20) {
+            VStack(spacing: 6) {
                 Text("今日のやること")
                     .font(.system(.subheadline, design: .rounded, weight: .medium))
                     .foregroundStyle(Color.appSecondary)
                     .tracking(0.3)
 
-                Button {
-                    viewModel.startEditingTitle()
-                } label: {
-                    Image(systemName: "pencil.circle.fill")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Color.appAccent.opacity(0.65))
-                        .frame(width: 34, height: 34)
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("編集")
+                Rectangle()
+                    .fill(Color.appDivider)
+                    .frame(maxWidth: 180, maxHeight: 1)
             }
-
-            Rectangle()
-                .fill(Color.appDivider)
-                .frame(maxWidth: 180, maxHeight: 1)
 
             Text(thing.title)
                 .font(.system(size: 36, weight: .bold, design: .rounded))
@@ -172,6 +160,23 @@ struct HomeView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(6)
                 .frame(maxWidth: 380)
+
+            Button {
+                viewModel.startEditingTitle()
+            } label: {
+                HStack(spacing: 3) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("変更")
+                        .font(.system(.caption, design: .rounded, weight: .semibold))
+                }
+                .foregroundStyle(Color.appAccent)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.appAccentSubtle, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("編集")
         }
         .padding(.horizontal, 32)
     }
