@@ -1,6 +1,6 @@
 import Foundation
 
-/// 今日取り組む「ひとつのこと」を登録または更新するユースケース。
+/// 今日やることを登録または更新するユースケース。
 struct SetOneThingUseCase {
     private let repository: ThingRepository
     private let dayBoundaryUseCase: DayBoundaryUseCase

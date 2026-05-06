@@ -1,6 +1,6 @@
 import Foundation
 
-/// 今日の「ひとつのこと」を読み込むユースケース。
+/// 今日やることを読み込むユースケース。
 struct LoadOneThingUseCase {
     private let repository: ThingRepository
     private let dayBoundaryUseCase: DayBoundaryUseCase

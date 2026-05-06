@@ -5,7 +5,7 @@ enum CompleteOneThingUseCaseError: Error, Equatable {
     case thingNotFound
 }
 
-/// 今日の「ひとつのこと」を完了状態へ更新するユースケース。
+/// 今日やることを完了状態へ更新するユースケース。
 struct CompleteOneThingUseCase {
     private let repository: ThingRepository
     private let dayBoundaryUseCase: DayBoundaryUseCase

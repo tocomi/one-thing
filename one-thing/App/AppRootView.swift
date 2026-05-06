@@ -15,6 +15,9 @@ struct AppRootView: View {
             viewModel: HomeViewModel(
                 loadOneThingUseCase: LoadOneThingUseCase(
                     repository: repository
+                ),
+                setOneThingUseCase: SetOneThingUseCase(
+                    repository: repository
                 )
             )
         )
