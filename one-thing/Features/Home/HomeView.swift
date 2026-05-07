@@ -100,9 +100,7 @@ struct HomeView: View {
     }
 
     private var draftTextField: some View {
-        ThingTextField(placeholder: "今日やること...", text: $viewModel.draftTitle) {
-            submitDraft()
-        }
+        ThingTextField(placeholder: "今日やること...", text: $viewModel.draftTitle)
     }
 
     // MARK: - In-progress state
@@ -195,9 +193,7 @@ struct HomeView: View {
                 .foregroundStyle(Color.appSecondary)
                 .tracking(0.3)
 
-            ThingTextField(placeholder: "", text: $viewModel.editingTitle) {
-                saveEditingTitle()
-            }
+            ThingTextField(placeholder: "", text: $viewModel.editingTitle)
 
             HStack(spacing: 14) {
                 Button("キャンセル") {

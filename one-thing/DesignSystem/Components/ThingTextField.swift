@@ -4,7 +4,7 @@ import SwiftUI
 struct ThingTextField: View {
     let placeholder: String
     @Binding var text: String
-    let onSubmit: () -> Void
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         TextField(placeholder, text: $text, axis: .vertical)
@@ -18,6 +18,7 @@ struct ThingTextField: View {
             .padding(.horizontal, 18)
             .padding(.vertical, 15)
             .frame(maxWidth: 360, minHeight: 58, alignment: .topLeading)
+            .focused($isFocused)
             .background {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Color.appSurface)
@@ -26,14 +27,24 @@ struct ThingTextField: View {
                             .strokeBorder(Color.appBorder, lineWidth: 1.5)
                     }
             }
-            .onSubmit(onSubmit)
+            .onSubmit {
+                isFocused = false
+            }
+            .onChange(of: text) { _, newValue in
+                guard newValue.contains("\n") else {
+                    return
+                }
+
+                text = newValue.replacingOccurrences(of: "\n", with: "")
+                isFocused = false
+            }
     }
 }
 
 #Preview {
     @Previewable @State var text = ""
 
-    ThingTextField(placeholder: "今日やること...", text: $text) {}
+    ThingTextField(placeholder: "今日やること...", text: $text)
         .padding(32)
         .background(Color.appBackground)
 }
