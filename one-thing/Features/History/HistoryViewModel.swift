@@ -181,8 +181,6 @@ final class HistoryViewModel {
         }
 
         switch error {
-        case .thingNotFound:
-            return "編集できる記録がありません。"
         case .emptyTitle:
             return "やったことを入力してください。"
         case .noChanges:

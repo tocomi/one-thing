@@ -72,7 +72,7 @@ struct HistoryView: View {
             ) {
                 ForEach(viewModel.days) { day in
                     HistoryDayCell(day: day) {
-                        guard day.date != nil else {
+                        guard day.date != nil, !day.isFuture else {
                             return
                         }
 

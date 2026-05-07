@@ -42,7 +42,9 @@ struct HomeView: View {
                 await viewModel.refreshForActiveScene()
             }
         }
-        .sheet(isPresented: $isHistoryPresented) {
+        .sheet(isPresented: $isHistoryPresented, onDismiss: {
+            Task { await viewModel.reloadStreak() }
+        }) {
             HistoryView(viewModel: historyViewModel)
         }
         .sheet(isPresented: $isSettingsPresented) {

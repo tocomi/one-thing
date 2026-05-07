@@ -2,7 +2,6 @@ import Foundation
 
 /// 履歴編集時に発生しうる業務エラーを表す。
 enum EditHistoryUseCaseError: Error, Equatable {
-    case thingNotFound
     case emptyTitle
     case noChanges
 }
@@ -27,7 +26,7 @@ struct EditHistoryUseCase {
         self.calculateStreakUseCase = calculateStreakUseCase
     }
 
-    /// 指定日の Thing を更新し、保存後の連続達成日数を返す。
+    /// 指定日の Thing を更新（存在しない場合は新規作成）し、保存後の連続達成日数を返す。
     func execute(
         date: Date,
         title: String? = nil,
@@ -39,23 +38,32 @@ struct EditHistoryUseCase {
             throw EditHistoryUseCaseError.noChanges
         }
 
-        guard let thing = try await repository.fetchThing(on: date) else {
-            throw EditHistoryUseCaseError.thingNotFound
-        }
-
-        if let title {
-            let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let thing: Thing
+        if let existing = try await repository.fetchThing(on: date) {
+            thing = existing
+            if let title {
+                let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedTitle.isEmpty else {
+                    throw EditHistoryUseCaseError.emptyTitle
+                }
+                thing.title = trimmedTitle
+            }
+            if let status {
+                thing.status = status
+            }
+            try await repository.saveChanges()
+        } else {
+            let trimmedTitle = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedTitle.isEmpty else {
                 throw EditHistoryUseCaseError.emptyTitle
             }
-            thing.title = trimmedTitle
+            thing = try await repository.createThing(
+                date: date,
+                title: trimmedTitle,
+                status: status ?? .done
+            )
         }
 
-        if let status {
-            thing.status = status
-        }
-
-        try await repository.saveChanges()
         let streakCount = try await calculateStreakUseCase.execute(
             now: now,
             dayBoundaryHour: dayBoundaryHour

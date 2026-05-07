@@ -28,7 +28,7 @@ struct HistoryDayCell: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(day.date == nil)
+        .disabled(day.date == nil || day.isFuture)
         .opacity(day.isFuture ? 0.36 : 1)
         .accessibilityLabel(accessibilityLabel)
     }

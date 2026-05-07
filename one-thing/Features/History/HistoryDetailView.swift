@@ -5,6 +5,7 @@ struct HistoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
     @State private var status: ThingStatus
+    @FocusState private var isTitleFocused: Bool
 
     let dateText: String
     let day: HistoryCalendarDay
@@ -79,14 +80,21 @@ struct HistoryDetailView: View {
                     .font(.system(.subheadline, design: .rounded, weight: .semibold))
                     .foregroundStyle(Color.appPrimary)
 
-                TextField("記録なし", text: $title, axis: .vertical)
+                TextField("やったことを入力", text: $title, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(.body, design: .rounded))
                     .foregroundStyle(Color.appPrimary)
                     .padding(14)
                     .background(Color.white.opacity(0.72))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .disabled(day.thing == nil)
+                    .submitLabel(.done)
+                    .focused($isTitleFocused)
+                    .onSubmit { isTitleFocused = false }
+                    .onChange(of: title) { _, newValue in
+                        guard newValue.contains("\n") else { return }
+                        title = newValue.replacingOccurrences(of: "\n", with: "")
+                        isTitleFocused = false
+                    }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -99,14 +107,9 @@ struct HistoryDetailView: View {
                     Text("休んだ").tag(ThingStatus.rested)
                 }
                 .pickerStyle(.segmented)
-                .disabled(day.thing == nil)
             }
 
-            if day.thing == nil {
-                Text("この日はまだ編集できる記録がありません。")
-                    .font(.system(.footnote, design: .rounded))
-                    .foregroundStyle(Color.appSecondary)
-            } else if let errorMessage {
+            if let errorMessage {
                 Text(errorMessage)
                     .font(.system(.footnote, design: .rounded))
                     .foregroundStyle(Color.appAccent)
@@ -116,7 +119,6 @@ struct HistoryDetailView: View {
 
     private var canSave: Bool {
         day.date != nil
-            && day.thing != nil
             && !trimmedTitle.isEmpty
             && !isSaving
     }

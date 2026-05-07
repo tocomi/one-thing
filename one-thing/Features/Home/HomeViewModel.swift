@@ -90,6 +90,11 @@ final class HomeViewModel {
         streakCount > 0 ? "\(streakCount)日連続達成中" : nil
     }
 
+    /// 履歴編集など外部変更後にストリーク表示だけを更新する。
+    func reloadStreak() async {
+        try? await refreshStreak()
+    }
+
     /// 今日の Thing を読み込み、画面表示用の状態に反映する。
     func load() async {
         isLoading = true
