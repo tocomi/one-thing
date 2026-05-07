@@ -14,6 +14,9 @@ import SwiftUI
             completeOneThingUseCase: CompleteOneThingUseCase(
                 repository: repository
             ),
+            autoRestUseCase: AutoRestUseCase(
+                repository: repository
+            ),
             calculateStreakUseCase: CalculateStreakUseCase(
                 repository: repository
             ),

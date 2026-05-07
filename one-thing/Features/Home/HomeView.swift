@@ -2,6 +2,7 @@ import SwiftUI
 
 /// 今日やることの状態表示と完了操作を提供するホーム画面。
 struct HomeView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: HomeViewModel
     #if DEBUG
     @State private var isDebugMenuPresented = false
@@ -22,7 +23,16 @@ struct HomeView: View {
             #endif
         }
         .task {
-            await viewModel.load()
+            await viewModel.refreshForActiveScene()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else {
+                return
+            }
+
+            Task {
+                await viewModel.refreshForActiveScene()
+            }
         }
         #if DEBUG
         .sheet(isPresented: $isDebugMenuPresented) {

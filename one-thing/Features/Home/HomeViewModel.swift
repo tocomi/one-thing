@@ -19,6 +19,7 @@ final class HomeViewModel {
     private let loadOneThingUseCase: LoadOneThingUseCase
     private let setOneThingUseCase: SetOneThingUseCase
     private let completeOneThingUseCase: CompleteOneThingUseCase
+    private let autoRestUseCase: AutoRestUseCase
     private let calculateStreakUseCase: CalculateStreakUseCase
     private let resetThingDataUseCase: ResetThingDataUseCase
     private let dayBoundaryUseCase: DayBoundaryUseCase
@@ -37,6 +38,7 @@ final class HomeViewModel {
         loadOneThingUseCase: LoadOneThingUseCase,
         setOneThingUseCase: SetOneThingUseCase,
         completeOneThingUseCase: CompleteOneThingUseCase,
+        autoRestUseCase: AutoRestUseCase,
         calculateStreakUseCase: CalculateStreakUseCase,
         resetThingDataUseCase: ResetThingDataUseCase,
         calendar: Calendar = .autoupdatingCurrent
@@ -44,6 +46,7 @@ final class HomeViewModel {
         self.loadOneThingUseCase = loadOneThingUseCase
         self.setOneThingUseCase = setOneThingUseCase
         self.completeOneThingUseCase = completeOneThingUseCase
+        self.autoRestUseCase = autoRestUseCase
         self.calculateStreakUseCase = calculateStreakUseCase
         self.resetThingDataUseCase = resetThingDataUseCase
         self.dayBoundaryUseCase = DayBoundaryUseCase(calendar: calendar)
@@ -92,6 +95,27 @@ final class HomeViewModel {
 
         do {
             thing = try await loadOneThingUseCase.execute()
+            if thing?.status == .done {
+                updateCompletionMessage()
+            }
+            try await refreshStreak()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 日付切り替わりを反映してから、今日の Thing を画面状態へ再読み込みする。
+    func refreshForActiveScene() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            _ = try await autoRestUseCase.execute()
+            thing = try await loadOneThingUseCase.execute()
+            draftTitle = ""
+            editingTitle = ""
+            isEditingTitle = false
             if thing?.status == .done {
                 updateCompletionMessage()
             }

@@ -39,6 +39,7 @@ struct DebugMenuView: View {
             loadOneThingUseCase: LoadOneThingUseCase(repository: repository),
             setOneThingUseCase: SetOneThingUseCase(repository: repository),
             completeOneThingUseCase: CompleteOneThingUseCase(repository: repository),
+            autoRestUseCase: AutoRestUseCase(repository: repository),
             calculateStreakUseCase: CalculateStreakUseCase(repository: repository),
             resetThingDataUseCase: ResetThingDataUseCase(repository: repository)
         )
