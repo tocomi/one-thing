@@ -14,6 +14,7 @@ struct HomeDoneView: View {
                 .font(.system(.title3, design: .rounded, weight: .medium))
                 .foregroundStyle(Color.appSecondary)
                 .tracking(0.3)
+                .frame(height: 44)
                 .padding(.top, 20)
 
             Spacer()

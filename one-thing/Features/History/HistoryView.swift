@@ -20,10 +20,18 @@ struct HistoryView: View {
                 await viewModel.load()
             }
             .sheet(item: $viewModel.selectedDay) { day in
-                HistoryDaySummaryView(
+                HistoryDetailView(
                     dateText: day.date.map { viewModel.dayText(for: $0) } ?? "",
-                    thing: day.thing
-                )
+                    day: day,
+                    isSaving: viewModel.isSaving,
+                    errorMessage: viewModel.errorMessage
+                ) { date, title, status in
+                    return await viewModel.saveHistoryDay(
+                        date: date,
+                        title: title,
+                        status: status
+                    )
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -95,6 +103,7 @@ struct HistoryView: View {
             monthButton(systemName: "chevron.right", accessibilityLabel: "次の月") {
                 await viewModel.moveToNextMonth()
             }
+            .disabled(viewModel.isDisplayingCurrentMonth)
         }
         .frame(height: 44)
     }
@@ -146,7 +155,11 @@ struct HistoryView: View {
 
     HistoryView(
         viewModel: HistoryViewModel(
-            loadHistoryUseCase: LoadHistoryUseCase(repository: repository)
+            loadHistoryUseCase: LoadHistoryUseCase(repository: repository),
+            editHistoryUseCase: EditHistoryUseCase(
+                repository: repository,
+                calculateStreakUseCase: CalculateStreakUseCase(repository: repository)
+            )
         )
     )
 }

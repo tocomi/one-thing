@@ -27,6 +27,12 @@ import SwiftUI
         historyViewModel: HistoryViewModel(
             loadHistoryUseCase: LoadHistoryUseCase(
                 repository: repository
+            ),
+            editHistoryUseCase: EditHistoryUseCase(
+                repository: repository,
+                calculateStreakUseCase: CalculateStreakUseCase(
+                    repository: repository
+                )
             )
         )
     )

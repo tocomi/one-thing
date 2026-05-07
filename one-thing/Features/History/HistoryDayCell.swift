@@ -8,7 +8,7 @@ struct HistoryDayCell: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                marker
+                todayMarker
 
                 if let dayNumber = day.dayNumber {
                     Text("\(dayNumber)")
@@ -20,6 +20,8 @@ struct HistoryDayCell: View {
                         .fixedSize()
                         .frame(width: 28, height: 28)
                 }
+
+                statusIcon
             }
             .frame(maxWidth: .infinity)
             .aspectRatio(1, contentMode: .fit)
@@ -27,29 +29,49 @@ struct HistoryDayCell: View {
         }
         .buttonStyle(.plain)
         .disabled(day.date == nil)
+        .opacity(day.isFuture ? 0.36 : 1)
         .accessibilityLabel(accessibilityLabel)
     }
 
     @ViewBuilder
-    private var marker: some View {
-        if day.thing?.status == .done {
+    private var todayMarker: some View {
+        if day.isToday {
             Circle()
-                .fill(Color.appPrimary)
-                .padding(5)
-        } else if day.thing?.status == .rested {
-            Circle()
-                .stroke(Color.appPrimary, lineWidth: 1.5)
-                .padding(5)
+                .fill(Color.appAccentSubtle)
+                .overlay {
+                    Circle()
+                        .stroke(Color.appAccent.opacity(0.45), lineWidth: 1)
+                }
+                .frame(width: 28, height: 28)
         }
     }
 
-    private var textColor: Color {
-        day.thing?.status == .done ? Color.appBackground : Color.appPrimary
+    @ViewBuilder
+    private var statusIcon: some View {
+        if day.thing?.status == .done {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.appAccent)
+                .frame(width: 14, height: 14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(4)
+        } else if day.thing?.status == .rested {
+            Image(systemName: "pause.circle")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color.appSecondary)
+                .frame(width: 14, height: 14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(4)
+        }
     }
 
     private var accessibilityLabel: String {
         guard let dayNumber = day.dayNumber else {
             return ""
+        }
+
+        if day.isFuture {
+            return "\(dayNumber)日 未来"
         }
 
         switch day.thing?.status {
@@ -61,6 +83,10 @@ struct HistoryDayCell: View {
             return "\(dayNumber)日 記録なし"
         }
     }
+
+    private var textColor: Color {
+        day.isFuture ? Color.appSecondary : Color.appPrimary
+    }
 }
 
 #Preview {
@@ -69,7 +95,9 @@ struct HistoryDayCell: View {
             day: HistoryCalendarDay(
                 date: Date(),
                 dayNumber: 1,
-                thing: Thing(title: "散歩する", status: .done)
+                thing: Thing(title: "散歩する", status: .done),
+                isToday: true,
+                isFuture: false
             ),
             action: {}
         )
@@ -77,12 +105,14 @@ struct HistoryDayCell: View {
             day: HistoryCalendarDay(
                 date: Date(),
                 dayNumber: 2,
-                thing: Thing(title: "本を読む", status: .rested)
+                thing: Thing(title: "本を読む", status: .rested),
+                isToday: false,
+                isFuture: false
             ),
             action: {}
         )
         HistoryDayCell(
-            day: HistoryCalendarDay(date: Date(), dayNumber: 3, thing: nil),
+            day: HistoryCalendarDay(date: Date(), dayNumber: 3, thing: nil, isToday: false, isFuture: true),
             action: {}
         )
     }
