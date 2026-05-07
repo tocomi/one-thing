@@ -10,13 +10,23 @@ struct DebugMenuView: View {
         NavigationStack {
             List {
                 Section("データ") {
+                    Button {
+                        Task {
+                            await viewModel.generateRandomHistoryForDebug()
+                            dismiss()
+                        }
+                    } label: {
+                        Label("過去1か月の履歴を作成", systemImage: "calendar.badge.plus")
+                    }
+                    .disabled(viewModel.isSubmitting)
+
                     Button(role: .destructive) {
                         Task {
                             await viewModel.resetSavedDataForDebug()
                             dismiss()
                         }
                     } label: {
-                        Label("保存データをリセット", systemImage: "trash")
+                        Label("履歴をリセット", systemImage: "trash")
                     }
                     .disabled(viewModel.isSubmitting)
                 }
@@ -41,7 +51,8 @@ struct DebugMenuView: View {
             completeOneThingUseCase: CompleteOneThingUseCase(repository: repository),
             autoRestUseCase: AutoRestUseCase(repository: repository),
             calculateStreakUseCase: CalculateStreakUseCase(repository: repository),
-            resetThingDataUseCase: ResetThingDataUseCase(repository: repository)
+            resetThingDataUseCase: ResetThingDataUseCase(repository: repository),
+            generateDebugHistoryUseCase: GenerateDebugHistoryUseCase(repository: repository)
         )
     )
 }

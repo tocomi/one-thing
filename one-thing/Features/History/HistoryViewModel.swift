@@ -77,6 +77,14 @@ final class HistoryViewModel {
         }
     }
 
+    /// 履歴シート表示前に古い表示データを破棄し、読み込み状態にする。
+    func prepareForPresentation() {
+        selectedDay = nil
+        days = []
+        errorMessage = nil
+        isLoading = true
+    }
+
     /// 前月へ移動して履歴を読み込む。
     func moveToPreviousMonth() async {
         guard let previousMonth = calendar.date(byAdding: .month, value: -1, to: displayedMonth) else {

@@ -22,7 +22,7 @@ struct HomeView: View {
             Color.appBackground.ignoresSafeArea()
             contentArea
             HomeHeaderView(
-                isHistoryPresented: $isHistoryPresented,
+                isHistoryPresented: historyPresentationBinding,
                 isSettingsPresented: $isSettingsPresented
             )
 
@@ -59,6 +59,18 @@ struct HomeView: View {
     }
 
     // MARK: - Content routing
+
+    private var historyPresentationBinding: Binding<Bool> {
+        Binding(
+            get: { isHistoryPresented },
+            set: { isPresented in
+                if isPresented {
+                    historyViewModel.prepareForPresentation()
+                }
+                isHistoryPresented = isPresented
+            }
+        )
+    }
 
     @ViewBuilder
     private var contentArea: some View {

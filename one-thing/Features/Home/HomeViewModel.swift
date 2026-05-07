@@ -22,6 +22,7 @@ final class HomeViewModel {
     private let autoRestUseCase: AutoRestUseCase
     private let calculateStreakUseCase: CalculateStreakUseCase
     private let resetThingDataUseCase: ResetThingDataUseCase
+    let generateDebugHistoryUseCase: GenerateDebugHistoryUseCase
     private let dayBoundaryUseCase: DayBoundaryUseCase
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
@@ -41,6 +42,7 @@ final class HomeViewModel {
         autoRestUseCase: AutoRestUseCase,
         calculateStreakUseCase: CalculateStreakUseCase,
         resetThingDataUseCase: ResetThingDataUseCase,
+        generateDebugHistoryUseCase: GenerateDebugHistoryUseCase,
         calendar: Calendar = .autoupdatingCurrent
     ) {
         self.loadOneThingUseCase = loadOneThingUseCase
@@ -49,6 +51,7 @@ final class HomeViewModel {
         self.autoRestUseCase = autoRestUseCase
         self.calculateStreakUseCase = calculateStreakUseCase
         self.resetThingDataUseCase = resetThingDataUseCase
+        self.generateDebugHistoryUseCase = generateDebugHistoryUseCase
         self.dayBoundaryUseCase = DayBoundaryUseCase(calendar: calendar)
         self.calendar = calendar
 
