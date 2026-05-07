@@ -23,6 +23,11 @@ import SwiftUI
             resetThingDataUseCase: ResetThingDataUseCase(
                 repository: repository
             )
+        ),
+        historyViewModel: HistoryViewModel(
+            loadHistoryUseCase: LoadHistoryUseCase(
+                repository: repository
+            )
         )
     )
 }

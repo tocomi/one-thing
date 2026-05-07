@@ -31,6 +31,11 @@ struct AppRootView: View {
                 resetThingDataUseCase: ResetThingDataUseCase(
                     repository: repository
                 )
+            ),
+            historyViewModel: HistoryViewModel(
+                loadHistoryUseCase: LoadHistoryUseCase(
+                    repository: repository
+                )
             )
         )
     }

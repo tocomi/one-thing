@@ -4,6 +4,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: HomeViewModel
+    @State private var historyViewModel: HistoryViewModel
     @State private var isHistoryPresented = false
     @State private var isSettingsPresented = false
     #if DEBUG
@@ -11,8 +12,9 @@ struct HomeView: View {
     #endif
 
     /// ホーム画面で利用する ViewModel を受け取る。
-    init(viewModel: HomeViewModel) {
+    init(viewModel: HomeViewModel, historyViewModel: HistoryViewModel) {
         self.viewModel = viewModel
+        self.historyViewModel = historyViewModel
     }
 
     var body: some View {
@@ -41,7 +43,7 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $isHistoryPresented) {
-            HistoryView()
+            HistoryView(viewModel: historyViewModel)
         }
         .sheet(isPresented: $isSettingsPresented) {
             SettingsView()
