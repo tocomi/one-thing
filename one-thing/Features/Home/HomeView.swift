@@ -4,6 +4,8 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: HomeViewModel
+    @State private var isHistoryPresented = false
+    @State private var isSettingsPresented = false
     #if DEBUG
     @State private var isDebugMenuPresented = false
     #endif
@@ -17,9 +19,13 @@ struct HomeView: View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
             contentArea
+            HomeHeaderView(
+                isHistoryPresented: $isHistoryPresented,
+                isSettingsPresented: $isSettingsPresented
+            )
 
             #if DEBUG
-            debugMenuButton
+            HomeDebugMenuButton(isPresented: $isDebugMenuPresented)
             #endif
         }
         .task {
@@ -33,6 +39,12 @@ struct HomeView: View {
             Task {
                 await viewModel.refreshForActiveScene()
             }
+        }
+        .sheet(isPresented: $isHistoryPresented) {
+            HistoryView()
+        }
+        .sheet(isPresented: $isSettingsPresented) {
+            SettingsView()
         }
         #if DEBUG
         .sheet(isPresented: $isDebugMenuPresented) {
@@ -237,6 +249,7 @@ struct HomeView: View {
             .font(.system(.title3, design: .rounded, weight: .medium))
             .foregroundStyle(Color.appSecondary)
             .tracking(0.3)
+            .frame(height: 44)
     }
 
     /// 連続達成日数を炎アイコンとともにカプセル型で表示する。
@@ -268,29 +281,4 @@ struct HomeView: View {
         Task { await viewModel.completeThing() }
     }
 
-    // MARK: - Debug
-
-    #if DEBUG
-    private var debugMenuButton: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button {
-                    isDebugMenuPresented = true
-                } label: {
-                    Image(systemName: "wrench.and.screwdriver")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.appSecondary.opacity(0.5))
-                        .frame(width: 36, height: 36)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.top, 20)
-            .padding(.trailing, 20)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-    #endif
 }
