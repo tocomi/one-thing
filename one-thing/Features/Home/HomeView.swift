@@ -52,7 +52,13 @@ struct HomeView: View {
                 inProgressView(thing: thing)
                     .transition(.opacity)
             } else {
-                doneView(thing: thing)
+                HomeDoneView(
+                    thing: thing,
+                    dateText: viewModel.currentDateText,
+                    message: viewModel.completionMessage,
+                    streakText: viewModel.streakText,
+                    isAnimationVisible: viewModel.isCompletionAnimationVisible
+                )
                     .transition(.opacity)
             }
         } else {
@@ -218,32 +224,6 @@ struct HomeView: View {
         .padding(.horizontal, 32)
     }
 
-    // MARK: - Done state
-
-    /// タスク完了後の達成表示。
-    private func doneView(thing: Thing) -> some View {
-        VStack(spacing: 20) {
-            dateLabel
-
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.appAccent)
-
-            Text(thing.title)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.appPrimary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 360)
-                .strikethrough(true, color: Color.appAccent.opacity(0.55))
-
-            Text("達成！")
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(Color.appSecondary)
-        }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
     // MARK: - Shared components
 
     private var dateLabel: some View {
@@ -307,28 +287,4 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
     #endif
-}
-
-#Preview {
-    let repository = InMemoryThingRepository()
-
-    HomeView(
-        viewModel: HomeViewModel(
-            loadOneThingUseCase: LoadOneThingUseCase(
-                repository: repository
-            ),
-            setOneThingUseCase: SetOneThingUseCase(
-                repository: repository
-            ),
-            completeOneThingUseCase: CompleteOneThingUseCase(
-                repository: repository
-            ),
-            calculateStreakUseCase: CalculateStreakUseCase(
-                repository: repository
-            ),
-            resetThingDataUseCase: ResetThingDataUseCase(
-                repository: repository
-            )
-        )
-    )
 }

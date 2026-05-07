@@ -9,6 +9,8 @@ final class HomeViewModel {
     var draftTitle = ""
     var editingTitle = ""
     var isEditingTitle = false
+    var completionMessage = "ひとつ、できた。"
+    var isCompletionAnimationVisible = false
     var streakCount = 0
     var isLoading = false
     var isSubmitting = false
@@ -22,6 +24,13 @@ final class HomeViewModel {
     private let dayBoundaryUseCase: DayBoundaryUseCase
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
+    private let completionMessages = [
+        "よくやった。",
+        "それだけで、十分。",
+        "今日も前に進んだ。",
+        "ひとつ、できた。",
+        "今日の自分を、ちゃんと褒めて。"
+    ]
 
     /// HomeView で必要なユースケースと日付表示用の依存を受け取る。
     init(
@@ -83,6 +92,9 @@ final class HomeViewModel {
 
         do {
             thing = try await loadOneThingUseCase.execute()
+            if thing?.status == .done {
+                updateCompletionMessage()
+            }
             try await refreshStreak()
         } catch {
             errorMessage = error.localizedDescription
@@ -160,7 +172,9 @@ final class HomeViewModel {
             thing = try await completeOneThingUseCase.execute()
             isEditingTitle = false
             editingTitle = ""
+            updateCompletionMessage()
             try await refreshStreak()
+            playCompletionAnimation()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -178,9 +192,25 @@ final class HomeViewModel {
             draftTitle = ""
             editingTitle = ""
             isEditingTitle = false
+            isCompletionAnimationVisible = false
             streakCount = 0
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 完了状態で表示する称賛メッセージを選ぶ。
+    private func updateCompletionMessage() {
+        completionMessage = completionMessages.randomElement() ?? completionMessage
+    }
+
+    /// 完了直後だけ表示する短いアニメーション状態を管理する。
+    private func playCompletionAnimation() {
+        isCompletionAnimationVisible = true
+
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(900))
+            self?.isCompletionAnimationVisible = false
         }
     }
 
