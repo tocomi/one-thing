@@ -5,6 +5,7 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: HomeViewModel
     @State private var historyViewModel: HistoryViewModel
+    private let notificationUseCase: NotificationUseCase?
     @State private var isHistoryPresented = false
     @State private var isSettingsPresented = false
     #if DEBUG
@@ -12,20 +13,17 @@ struct HomeView: View {
     #endif
 
     /// ホーム画面で利用する ViewModel を受け取る。
-    init(viewModel: HomeViewModel, historyViewModel: HistoryViewModel) {
+    init(viewModel: HomeViewModel, historyViewModel: HistoryViewModel, notificationUseCase: NotificationUseCase? = nil) {
         self.viewModel = viewModel
         self.historyViewModel = historyViewModel
+        self.notificationUseCase = notificationUseCase
     }
 
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
             contentArea
-            HomeHeaderView(
-                isHistoryPresented: historyPresentationBinding,
-                isSettingsPresented: $isSettingsPresented
-            )
-
+            HomeHeaderView(isHistoryPresented: historyPresentationBinding, isSettingsPresented: $isSettingsPresented)
             #if DEBUG
             HomeDebugMenuButton(isPresented: $isDebugMenuPresented)
             #endif
@@ -47,9 +45,7 @@ struct HomeView: View {
         }) {
             HistoryView(viewModel: historyViewModel)
         }
-        .sheet(isPresented: $isSettingsPresented) {
-            SettingsView(viewModel: SettingsViewModel())
-        }
+        .sheet(isPresented: $isSettingsPresented) { settingsSheet }
         #if DEBUG
         .sheet(isPresented: $isDebugMenuPresented) {
             DebugMenuView(viewModel: viewModel)
@@ -72,6 +68,10 @@ struct HomeView: View {
                 isHistoryPresented = isPresented
             }
         )
+    }
+
+    private var settingsSheet: some View {
+        SettingsView(viewModel: SettingsViewModel(notificationUseCase: notificationUseCase))
     }
 
     @ViewBuilder

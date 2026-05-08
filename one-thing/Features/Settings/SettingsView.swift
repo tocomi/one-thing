@@ -76,6 +76,9 @@ struct SettingsView: View {
             },
             set: { date in
                 viewModel[keyPath: keyPath] = viewModel.minutes(from: date)
+                Task {
+                    await viewModel.syncNotifications()
+                }
             }
         )
     }

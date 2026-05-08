@@ -30,16 +30,19 @@ final class SettingsViewModel {
 
     private let userDefaults: UserDefaults
     private let notificationCenter: UNUserNotificationCenter
+    private let notificationUseCase: NotificationUseCase?
     private let calendar: Calendar
 
     /// 永続化先と通知許可要求先を受け取る。
     init(
         userDefaults: UserDefaults = .standard,
         notificationCenter: UNUserNotificationCenter = .current(),
+        notificationUseCase: NotificationUseCase? = nil,
         calendar: Calendar = .autoupdatingCurrent
     ) {
         self.userDefaults = userDefaults
         self.notificationCenter = notificationCenter
+        self.notificationUseCase = notificationUseCase
         self.calendar = calendar
         self.receivesNotifications = userDefaults.bool(forKey: Keys.receivesNotifications)
         self.morningNotificationMinutes = Self.integer(
@@ -64,6 +67,7 @@ final class SettingsViewModel {
         guard isEnabled else {
             receivesNotifications = false
             notificationPermissionDenied = false
+            await syncNotifications()
             return
         }
 
@@ -73,10 +77,17 @@ final class SettingsViewModel {
             )
             receivesNotifications = granted
             notificationPermissionDenied = !granted
+            await syncNotifications()
         } catch {
             receivesNotifications = false
             notificationPermissionDenied = true
+            await syncNotifications()
         }
+    }
+
+    /// 通知設定の変更をローカル通知予約へ反映する。
+    func syncNotifications() async {
+        try? await notificationUseCase?.execute()
     }
 
     /// 保存値を DatePicker で扱える Date に変換する。
@@ -108,14 +119,6 @@ final class SettingsViewModel {
             ? defaultValue
             : userDefaults.integer(forKey: key)
     }
-}
-
-/// UserDefaults へ保存する設定キー。
-enum SettingsKeys {
-    static let receivesNotifications = "settings.receivesNotifications"
-    static let morningNotificationMinutes = "settings.morningNotificationMinutes"
-    static let eveningNotificationMinutes = "settings.eveningNotificationMinutes"
-    static let dayBoundaryMinutes = "settings.dayBoundaryMinutes"
 }
 
 private typealias Keys = SettingsKeys

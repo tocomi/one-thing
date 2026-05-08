@@ -11,6 +11,11 @@ struct AppRootView: View {
 
     /// Home feature の初期画面を組み立てる。
     var body: some View {
+        let notificationUseCase = NotificationUseCase(
+            repository: repository,
+            notificationScheduler: NotificationService()
+        )
+
         HomeView(
             viewModel: HomeViewModel(
                 loadOneThingUseCase: LoadOneThingUseCase(
@@ -31,6 +36,7 @@ struct AppRootView: View {
                 resetThingDataUseCase: ResetThingDataUseCase(
                     repository: repository
                 ),
+                notificationUseCase: notificationUseCase,
                 generateDebugHistoryUseCase: GenerateDebugHistoryUseCase(
                     repository: repository
                 )
@@ -45,7 +51,8 @@ struct AppRootView: View {
                         repository: repository
                     )
                 )
-            )
+            ),
+            notificationUseCase: notificationUseCase
         )
     }
 }

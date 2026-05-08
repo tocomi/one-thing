@@ -22,6 +22,7 @@ final class HomeViewModel {
     private let autoRestUseCase: AutoRestUseCase
     private let calculateStreakUseCase: CalculateStreakUseCase
     private let resetThingDataUseCase: ResetThingDataUseCase
+    private let notificationUseCase: NotificationUseCase?
     let generateDebugHistoryUseCase: GenerateDebugHistoryUseCase
     private let dayBoundaryUseCase: DayBoundaryUseCase
     private let calendar: Calendar
@@ -42,6 +43,7 @@ final class HomeViewModel {
         autoRestUseCase: AutoRestUseCase,
         calculateStreakUseCase: CalculateStreakUseCase,
         resetThingDataUseCase: ResetThingDataUseCase,
+        notificationUseCase: NotificationUseCase? = nil,
         generateDebugHistoryUseCase: GenerateDebugHistoryUseCase,
         calendar: Calendar = .autoupdatingCurrent
     ) {
@@ -51,6 +53,7 @@ final class HomeViewModel {
         self.autoRestUseCase = autoRestUseCase
         self.calculateStreakUseCase = calculateStreakUseCase
         self.resetThingDataUseCase = resetThingDataUseCase
+        self.notificationUseCase = notificationUseCase
         self.generateDebugHistoryUseCase = generateDebugHistoryUseCase
         self.dayBoundaryUseCase = DayBoundaryUseCase(calendar: calendar)
         self.calendar = calendar
@@ -107,6 +110,7 @@ final class HomeViewModel {
                 updateCompletionMessage()
             }
             try await refreshStreak()
+            await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -128,6 +132,7 @@ final class HomeViewModel {
                 updateCompletionMessage()
             }
             try await refreshStreak()
+            await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -148,6 +153,7 @@ final class HomeViewModel {
             thing = try await setOneThingUseCase.execute(title: title)
             draftTitle = ""
             try await refreshStreak()
+            await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -185,6 +191,7 @@ final class HomeViewModel {
             editingTitle = ""
             isEditingTitle = false
             try await refreshStreak()
+            await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -206,6 +213,7 @@ final class HomeViewModel {
             editingTitle = ""
             updateCompletionMessage()
             try await refreshStreak()
+            await syncNotifications()
             playCompletionAnimation()
         } catch {
             errorMessage = error.localizedDescription
@@ -226,6 +234,7 @@ final class HomeViewModel {
             isEditingTitle = false
             isCompletionAnimationVisible = false
             streakCount = 0
+            await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -255,6 +264,11 @@ final class HomeViewModel {
         }
 
         streakCount = try await calculateStreakUseCase.execute()
+    }
+
+    /// 現在の Thing と設定に合わせてローカル通知予約を更新する。
+    private func syncNotifications() async {
+        try? await notificationUseCase?.execute()
     }
 
     /// アプリ上の今日の前日をストリーク計算に渡すための基準日時を返す。
