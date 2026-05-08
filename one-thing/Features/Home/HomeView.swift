@@ -48,7 +48,7 @@ struct HomeView: View {
             HistoryView(viewModel: historyViewModel)
         }
         .sheet(isPresented: $isSettingsPresented) {
-            SettingsView()
+            SettingsView(viewModel: SettingsViewModel())
         }
         #if DEBUG
         .sheet(isPresented: $isDebugMenuPresented) {
