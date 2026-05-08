@@ -11,7 +11,6 @@ final class HomeViewModel {
     var isEditingTitle = false
     var completionMessage = "ひとつ、できた。"
     var isCompletionAnimationVisible = false
-    var streakCount = 0
     var isLoading = false
     var isSubmitting = false
     var errorMessage: String?
@@ -20,11 +19,9 @@ final class HomeViewModel {
     private let setOneThingUseCase: SetOneThingUseCase
     private let completeOneThingUseCase: CompleteOneThingUseCase
     private let autoRestUseCase: AutoRestUseCase
-    private let calculateStreakUseCase: CalculateStreakUseCase
     private let resetThingDataUseCase: ResetThingDataUseCase
     private let notificationUseCase: NotificationUseCase?
     let generateDebugHistoryUseCase: GenerateDebugHistoryUseCase
-    private let dayBoundaryUseCase: DayBoundaryUseCase
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
     private let completionMessages = [
@@ -41,7 +38,6 @@ final class HomeViewModel {
         setOneThingUseCase: SetOneThingUseCase,
         completeOneThingUseCase: CompleteOneThingUseCase,
         autoRestUseCase: AutoRestUseCase,
-        calculateStreakUseCase: CalculateStreakUseCase,
         resetThingDataUseCase: ResetThingDataUseCase,
         notificationUseCase: NotificationUseCase? = nil,
         generateDebugHistoryUseCase: GenerateDebugHistoryUseCase,
@@ -51,11 +47,9 @@ final class HomeViewModel {
         self.setOneThingUseCase = setOneThingUseCase
         self.completeOneThingUseCase = completeOneThingUseCase
         self.autoRestUseCase = autoRestUseCase
-        self.calculateStreakUseCase = calculateStreakUseCase
         self.resetThingDataUseCase = resetThingDataUseCase
         self.notificationUseCase = notificationUseCase
         self.generateDebugHistoryUseCase = generateDebugHistoryUseCase
-        self.dayBoundaryUseCase = DayBoundaryUseCase(calendar: calendar)
         self.calendar = calendar
 
         let formatter = DateFormatter()
@@ -88,16 +82,6 @@ final class HomeViewModel {
             && !isSubmitting
     }
 
-    /// 連続達成日数をメイン画面向けの文言で返す。
-    var streakText: String? {
-        streakCount > 0 ? "\(streakCount)日連続達成中" : nil
-    }
-
-    /// 履歴編集など外部変更後にストリーク表示だけを更新する。
-    func reloadStreak() async {
-        try? await refreshStreak()
-    }
-
     /// 今日の Thing を読み込み、画面表示用の状態に反映する。
     func load() async {
         isLoading = true
@@ -109,7 +93,6 @@ final class HomeViewModel {
             if thing?.status == .done {
                 updateCompletionMessage()
             }
-            try await refreshStreak()
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -131,7 +114,6 @@ final class HomeViewModel {
             if thing?.status == .done {
                 updateCompletionMessage()
             }
-            try await refreshStreak()
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -152,7 +134,6 @@ final class HomeViewModel {
         do {
             thing = try await setOneThingUseCase.execute(title: title)
             draftTitle = ""
-            try await refreshStreak()
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -190,7 +171,6 @@ final class HomeViewModel {
             thing = try await setOneThingUseCase.execute(title: title)
             editingTitle = ""
             isEditingTitle = false
-            try await refreshStreak()
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -212,7 +192,6 @@ final class HomeViewModel {
             isEditingTitle = false
             editingTitle = ""
             updateCompletionMessage()
-            try await refreshStreak()
             await syncNotifications()
             playCompletionAnimation()
         } catch {
@@ -233,7 +212,6 @@ final class HomeViewModel {
             editingTitle = ""
             isEditingTitle = false
             isCompletionAnimationVisible = false
-            streakCount = 0
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -255,34 +233,8 @@ final class HomeViewModel {
         }
     }
 
-    /// 現在の表示状態に合わせて連続達成日数を更新する。
-    private func refreshStreak() async throws {
-        if thing?.status == .inProgress,
-           let previousDayReferenceDate {
-            streakCount = try await calculateStreakUseCase.execute(now: previousDayReferenceDate)
-            return
-        }
-
-        streakCount = try await calculateStreakUseCase.execute()
-    }
-
     /// 現在の Thing と設定に合わせてローカル通知予約を更新する。
     private func syncNotifications() async {
         try? await notificationUseCase?.execute()
-    }
-
-    /// アプリ上の今日の前日をストリーク計算に渡すための基準日時を返す。
-    private var previousDayReferenceDate: Date? {
-        let appToday = dayBoundaryUseCase.execute()
-
-        guard let previousDay = calendar.date(byAdding: .day, value: -1, to: appToday) else {
-            return nil
-        }
-
-        return calendar.date(
-            byAdding: .hour,
-            value: DayBoundaryUseCase.defaultBoundaryHour,
-            to: previousDay
-        )
     }
 }

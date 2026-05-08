@@ -40,9 +40,7 @@ struct HomeView: View {
                 await viewModel.refreshForActiveScene()
             }
         }
-        .sheet(isPresented: $isHistoryPresented, onDismiss: {
-            Task { await viewModel.reloadStreak() }
-        }) {
+        .sheet(isPresented: $isHistoryPresented) {
             HistoryView(viewModel: historyViewModel)
         }
         .sheet(isPresented: $isSettingsPresented) { settingsSheet }
@@ -94,7 +92,6 @@ struct HomeView: View {
                     thing: thing,
                     dateText: viewModel.currentDateText,
                     message: viewModel.completionMessage,
-                    streakText: viewModel.streakText,
                     isAnimationVisible: viewModel.isCompletionAnimationVisible
                 )
                     .transition(.opacity)
@@ -146,13 +143,8 @@ struct HomeView: View {
     /// タスクが設定済みで完了前の状態。
     private func inProgressView(thing: Thing) -> some View {
         VStack(spacing: 0) {
-            VStack(spacing: 8) {
-                dateLabel
-                if let streakText = viewModel.streakText {
-                    streakBadge(text: streakText)
-                }
-            }
-            .padding(.top, 20)
+            dateLabel
+                .padding(.top, 20)
 
             Spacer()
 
@@ -266,21 +258,6 @@ struct HomeView: View {
             .foregroundStyle(Color.appSecondary)
             .tracking(0.3)
             .frame(height: 44)
-    }
-
-    /// 連続達成日数を炎アイコンとともにカプセル型で表示する。
-    private func streakBadge(text: String) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 11, weight: .semibold))
-            Text(text)
-                .font(.system(.caption, design: .rounded, weight: .semibold))
-                .tracking(0.2)
-        }
-        .foregroundStyle(Color.appAccent)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Color.appAccentSubtle, in: Capsule())
     }
 
     // MARK: - Actions

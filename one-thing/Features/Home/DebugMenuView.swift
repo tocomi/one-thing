@@ -50,7 +50,6 @@ struct DebugMenuView: View {
             setOneThingUseCase: SetOneThingUseCase(repository: repository),
             completeOneThingUseCase: CompleteOneThingUseCase(repository: repository),
             autoRestUseCase: AutoRestUseCase(repository: repository),
-            calculateStreakUseCase: CalculateStreakUseCase(repository: repository),
             resetThingDataUseCase: ResetThingDataUseCase(repository: repository),
             generateDebugHistoryUseCase: GenerateDebugHistoryUseCase(repository: repository)
         )

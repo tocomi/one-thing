@@ -5,7 +5,6 @@ struct HomeDoneView: View {
     let thing: Thing
     let dateText: String
     let message: String
-    let streakText: String?
     let isAnimationVisible: Bool
 
     var body: some View {
@@ -27,15 +26,6 @@ struct HomeDoneView: View {
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.appPrimary)
                         .multilineTextAlignment(.center)
-
-                    if let streakText {
-                        Text(streakText)
-                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(Color.appAccent)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 7)
-                            .background(Color.appAccentSubtle, in: Capsule())
-                    }
                 }
 
                 Text(thing.title)
@@ -79,7 +69,6 @@ struct HomeDoneView: View {
         thing: Thing(title: "散歩する", status: .done),
         dateText: "5月7日 (木)",
         message: "ひとつ、できた。",
-        streakText: "3日連続達成中",
         isAnimationVisible: true
     )
     .background(Color.appBackground)

@@ -157,8 +157,7 @@ struct HistoryView: View {
         viewModel: HistoryViewModel(
             loadHistoryUseCase: LoadHistoryUseCase(repository: repository),
             editHistoryUseCase: EditHistoryUseCase(
-                repository: repository,
-                calculateStreakUseCase: CalculateStreakUseCase(repository: repository)
+                repository: repository
             )
         )
     )

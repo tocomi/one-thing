@@ -30,9 +30,6 @@ struct AppRootView: View {
                 autoRestUseCase: AutoRestUseCase(
                     repository: repository
                 ),
-                calculateStreakUseCase: CalculateStreakUseCase(
-                    repository: repository
-                ),
                 resetThingDataUseCase: ResetThingDataUseCase(
                     repository: repository
                 ),
@@ -46,10 +43,7 @@ struct AppRootView: View {
                     repository: repository
                 ),
                 editHistoryUseCase: EditHistoryUseCase(
-                    repository: repository,
-                    calculateStreakUseCase: CalculateStreakUseCase(
-                        repository: repository
-                    )
+                    repository: repository
                 )
             ),
             notificationUseCase: notificationUseCase

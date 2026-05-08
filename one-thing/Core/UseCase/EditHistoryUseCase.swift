@@ -9,30 +9,22 @@ enum EditHistoryUseCaseError: Error, Equatable {
 /// 履歴編集後に画面へ返す更新結果を表す。
 struct EditHistoryResult {
     let thing: Thing
-    let streakCount: Int
 }
 
-/// 過去日の Thing を編集し、編集後の連続達成日数を再計算するユースケース。
+/// 過去日の Thing を編集するユースケース。
 struct EditHistoryUseCase {
     private let repository: ThingRepository
-    private let calculateStreakUseCase: CalculateStreakUseCase
 
-    /// タスク保存先とストリーク再計算ユースケースを受け取る。
-    init(
-        repository: ThingRepository,
-        calculateStreakUseCase: CalculateStreakUseCase
-    ) {
+    /// タスク保存先を受け取る。
+    init(repository: ThingRepository) {
         self.repository = repository
-        self.calculateStreakUseCase = calculateStreakUseCase
     }
 
-    /// 指定日の Thing を更新（存在しない場合は新規作成）し、保存後の連続達成日数を返す。
+    /// 指定日の Thing を更新（存在しない場合は新規作成）し、保存後の内容を返す。
     func execute(
         date: Date,
         title: String? = nil,
-        status: ThingStatus? = nil,
-        now: Date = Date(),
-        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour
+        status: ThingStatus? = nil
     ) async throws -> EditHistoryResult {
         guard title != nil || status != nil else {
             throw EditHistoryUseCaseError.noChanges
@@ -64,11 +56,6 @@ struct EditHistoryUseCase {
             )
         }
 
-        let streakCount = try await calculateStreakUseCase.execute(
-            now: now,
-            dayBoundaryHour: dayBoundaryHour
-        )
-
-        return EditHistoryResult(thing: thing, streakCount: streakCount)
+        return EditHistoryResult(thing: thing)
     }
 }

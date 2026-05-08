@@ -17,9 +17,6 @@ import SwiftUI
             autoRestUseCase: AutoRestUseCase(
                 repository: repository
             ),
-            calculateStreakUseCase: CalculateStreakUseCase(
-                repository: repository
-            ),
             resetThingDataUseCase: ResetThingDataUseCase(
                 repository: repository
             ),
@@ -32,10 +29,7 @@ import SwiftUI
                 repository: repository
             ),
             editHistoryUseCase: EditHistoryUseCase(
-                repository: repository,
-                calculateStreakUseCase: CalculateStreakUseCase(
-                    repository: repository
-                )
+                repository: repository
             )
         )
     )
