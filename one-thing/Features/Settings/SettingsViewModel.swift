@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import UserNotifications
 
-/// 設定シートの入力状態を保持し、保存操作で永続化と通知許可要求を行う。
+/// 設定シートの入力状態を保持し、保存操作で永続化と通知予約更新を行う。
 @MainActor
 @Observable
 final class SettingsViewModel {
@@ -12,12 +12,12 @@ final class SettingsViewModel {
     var dayBoundaryMinutes: Int
     var notificationPermissionDenied = false
     var isSaving = false
+    var isRequestingNotificationPermission = false
 
     private let userDefaults: UserDefaults
     private let notificationCenter: UNUserNotificationCenter
     private let notificationUseCase: NotificationUseCase?
     private let calendar: Calendar
-    private let savedReceivesNotifications: Bool
 
     /// 永続化先と通知許可要求先を受け取る。
     init(
@@ -32,7 +32,6 @@ final class SettingsViewModel {
         self.calendar = calendar
         let receivesNotifications = userDefaults.bool(forKey: Keys.receivesNotifications)
         self.receivesNotifications = receivesNotifications
-        self.savedReceivesNotifications = receivesNotifications
         self.morningNotificationMinutes = Self.integer(
             forKey: Keys.morningNotificationMinutes,
             in: userDefaults,
@@ -50,26 +49,36 @@ final class SettingsViewModel {
         )
     }
 
-    /// 編集中の設定を UserDefaults に保存し、必要なら通知許可要求と通知予約更新を行う。
+    /// 通知 Toggle の変更を反映し、ON にしたときはその場で通知許可を求める。
+    func setReceivesNotifications(_ isEnabled: Bool) async {
+        guard isEnabled else {
+            receivesNotifications = false
+            notificationPermissionDenied = false
+            return
+        }
+
+        guard !isRequestingNotificationPermission else { return }
+        receivesNotifications = true
+        isRequestingNotificationPermission = true
+        defer { isRequestingNotificationPermission = false }
+
+        do {
+            let granted = try await notificationCenter.requestAuthorization(
+                options: [.alert, .badge, .sound]
+            )
+            receivesNotifications = granted
+            notificationPermissionDenied = !granted
+        } catch {
+            receivesNotifications = false
+            notificationPermissionDenied = true
+        }
+    }
+
+    /// 編集中の設定を UserDefaults に保存し、通知予約を更新する。
     func save() async -> Bool {
         guard !isSaving else { return false }
         isSaving = true
         defer { isSaving = false }
-
-        if receivesNotifications && !savedReceivesNotifications {
-            do {
-                let granted = try await notificationCenter.requestAuthorization(
-                    options: [.alert, .badge, .sound]
-                )
-                receivesNotifications = granted
-                notificationPermissionDenied = !granted
-            } catch {
-                receivesNotifications = false
-                notificationPermissionDenied = true
-            }
-        } else {
-            notificationPermissionDenied = false
-        }
 
         userDefaults.set(receivesNotifications, forKey: Keys.receivesNotifications)
         userDefaults.set(morningNotificationMinutes, forKey: Keys.morningNotificationMinutes)
@@ -77,7 +86,7 @@ final class SettingsViewModel {
         userDefaults.set(dayBoundaryMinutes, forKey: Keys.dayBoundaryMinutes)
         try? await notificationUseCase?.execute()
 
-        return !notificationPermissionDenied
+        return true
     }
 
     /// 保存値を DatePicker で扱える Date に変換する。

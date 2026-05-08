@@ -18,6 +18,7 @@ struct SettingsView: View {
                         "通知を受け取る",
                         isOn: notificationToggleBinding
                     )
+                    .disabled(viewModel.isRequestingNotificationPermission)
                     DatePicker(
                         "朝の通知",
                         selection: timeBinding(for: \.morningNotificationMinutes),
@@ -72,7 +73,9 @@ struct SettingsView: View {
         Binding(
             get: { viewModel.receivesNotifications },
             set: { isEnabled in
-                viewModel.receivesNotifications = isEnabled
+                Task {
+                    await viewModel.setReceivesNotifications(isEnabled)
+                }
             }
         )
     }
