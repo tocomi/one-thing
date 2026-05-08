@@ -33,6 +33,11 @@ final class InMemoryThingRepository: ThingRepository {
     /// 永続化を持たないため、保存処理を何もせず完了させる。
     func saveChanges() async throws {}
 
+    /// メモリ上の配列から指定日の Thing を削除する。
+    func deleteThing(on date: Date) async throws {
+        things.removeAll { $0.date == date }
+    }
+
     /// メモリ上に保持している Thing をすべて削除する。
     func deleteAllThings() async throws {
         things.removeAll()

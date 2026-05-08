@@ -44,6 +44,9 @@ struct AppRootView: View {
                 ),
                 editHistoryUseCase: EditHistoryUseCase(
                     repository: repository
+                ),
+                deleteHistoryUseCase: DeleteHistoryUseCase(
+                    repository: repository
                 )
             ),
             notificationUseCase: notificationUseCase

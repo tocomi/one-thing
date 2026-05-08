@@ -14,6 +14,7 @@ final class HistoryViewModel {
 
     private let loadHistoryUseCase: LoadHistoryUseCase
     private let editHistoryUseCase: EditHistoryUseCase
+    private let deleteHistoryUseCase: DeleteHistoryUseCase
     private let calendar: Calendar
     private let monthFormatter: DateFormatter
     private let dayFormatter: DateFormatter
@@ -22,11 +23,13 @@ final class HistoryViewModel {
     init(
         loadHistoryUseCase: LoadHistoryUseCase,
         editHistoryUseCase: EditHistoryUseCase,
+        deleteHistoryUseCase: DeleteHistoryUseCase,
         calendar: Calendar = .autoupdatingCurrent,
         initialMonth: Date = Date()
     ) {
         self.loadHistoryUseCase = loadHistoryUseCase
         self.editHistoryUseCase = editHistoryUseCase
+        self.deleteHistoryUseCase = deleteHistoryUseCase
         self.calendar = calendar
         displayedMonth = calendar.startOfDay(for: initialMonth)
 
@@ -136,6 +139,23 @@ final class HistoryViewModel {
             return true
         } catch {
             errorMessage = historyErrorMessage(for: error)
+            return false
+        }
+    }
+
+    /// 選択中の日の履歴を削除し、月カレンダーを更新する。
+    func deleteHistoryDay(date: Date) async -> Bool {
+        isSaving = true
+        errorMessage = nil
+        defer { isSaving = false }
+
+        do {
+            try await deleteHistoryUseCase.execute(date: calendar.startOfDay(for: date))
+            await load()
+            selectedDay = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
             return false
         }
     }

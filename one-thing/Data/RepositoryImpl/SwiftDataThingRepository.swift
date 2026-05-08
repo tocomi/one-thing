@@ -48,6 +48,16 @@ struct SwiftDataThingRepository: ThingRepository {
         try modelContext.save()
     }
 
+    /// SwiftData から指定日の Thing を削除する。
+    func deleteThing(on date: Date) async throws {
+        guard let thing = try await fetchThing(on: date) else {
+            return
+        }
+
+        modelContext.delete(thing)
+        try modelContext.save()
+    }
+
     /// SwiftData に保存されている Thing をすべて削除する。
     func deleteAllThings() async throws {
         let descriptor = FetchDescriptor<Thing>()

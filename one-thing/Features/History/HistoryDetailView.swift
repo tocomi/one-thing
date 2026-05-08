@@ -5,6 +5,7 @@ struct HistoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
     @State private var status: ThingStatus
+    @State private var isDeleteConfirmationPresented = false
     @FocusState private var isTitleFocused: Bool
 
     let dateText: String
@@ -12,6 +13,7 @@ struct HistoryDetailView: View {
     let isSaving: Bool
     let errorMessage: String?
     let save: (Date, String, ThingStatus) async -> Bool
+    let delete: (Date) async -> Bool
 
     /// 表示対象の日付データと保存処理を受け取る。
     init(
@@ -19,13 +21,15 @@ struct HistoryDetailView: View {
         day: HistoryCalendarDay,
         isSaving: Bool,
         errorMessage: String?,
-        save: @escaping (Date, String, ThingStatus) async -> Bool
+        save: @escaping (Date, String, ThingStatus) async -> Bool,
+        delete: @escaping (Date) async -> Bool
     ) {
         self.dateText = dateText
         self.day = day
         self.isSaving = isSaving
         self.errorMessage = errorMessage
         self.save = save
+        self.delete = delete
         _title = State(initialValue: day.thing?.title ?? "")
         _status = State(initialValue: Self.editableStatus(for: day.thing?.status))
     }
@@ -42,6 +46,19 @@ struct HistoryDetailView: View {
             .background(Color.appBackground.ignoresSafeArea())
             .navigationTitle("日次詳細")
             .navigationBarTitleDisplayMode(.inline)
+            .confirmationDialog(
+                "この日の記録を削除しますか？",
+                isPresented: $isDeleteConfirmationPresented,
+                titleVisibility: .visible
+            ) {
+                Button("削除", role: .destructive) {
+                    Task {
+                        await deleteHistory()
+                    }
+                }
+
+                Button("キャンセル", role: .cancel) {}
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("閉じる") {
@@ -114,6 +131,19 @@ struct HistoryDetailView: View {
                     .font(.system(.footnote, design: .rounded))
                     .foregroundStyle(Color.appAccent)
             }
+
+            if canDelete {
+                Button(role: .destructive) {
+                    isDeleteConfirmationPresented = true
+                } label: {
+                    Label("この日の記録を削除", systemImage: "trash")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(Color.appAccent)
+                .disabled(isSaving)
+            }
         }
     }
 
@@ -127,12 +157,26 @@ struct HistoryDetailView: View {
         title.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var canDelete: Bool {
+        day.date != nil && day.thing != nil
+    }
+
     private func saveHistory() async {
         guard let date = day.date, canSave else {
             return
         }
 
         if await save(date, trimmedTitle, status) {
+            dismiss()
+        }
+    }
+
+    private func deleteHistory() async {
+        guard let date = day.date, canDelete, !isSaving else {
+            return
+        }
+
+        if await delete(date) {
             dismiss()
         }
     }
@@ -165,6 +209,7 @@ struct HistoryDetailView: View {
         ),
         isSaving: false,
         errorMessage: nil,
-        save: { _, _, _ in true }
+        save: { _, _, _ in true },
+        delete: { _ in true }
     )
 }

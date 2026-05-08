@@ -31,6 +31,8 @@ struct HistoryView: View {
                         title: title,
                         status: status
                     )
+                } delete: { date in
+                    return await viewModel.deleteHistoryDay(date: date)
                 }
             }
             .toolbar {
@@ -157,6 +159,9 @@ struct HistoryView: View {
         viewModel: HistoryViewModel(
             loadHistoryUseCase: LoadHistoryUseCase(repository: repository),
             editHistoryUseCase: EditHistoryUseCase(
+                repository: repository
+            ),
+            deleteHistoryUseCase: DeleteHistoryUseCase(
                 repository: repository
             )
         )

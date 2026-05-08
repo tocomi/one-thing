@@ -30,6 +30,9 @@ import SwiftUI
             ),
             editHistoryUseCase: EditHistoryUseCase(
                 repository: repository
+            ),
+            deleteHistoryUseCase: DeleteHistoryUseCase(
+                repository: repository
             )
         )
     )

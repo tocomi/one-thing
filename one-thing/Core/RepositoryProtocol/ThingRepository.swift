@@ -15,6 +15,9 @@ protocol ThingRepository {
     /// 既存エンティティへの変更を永続化する。
     func saveChanges() async throws
 
+    /// 指定日の Thing を削除する。
+    func deleteThing(on date: Date) async throws
+
     /// 開発中の確認用に、保存済みの Thing をすべて削除する。
     func deleteAllThings() async throws
 }
