@@ -2,36 +2,22 @@ import Foundation
 import Observation
 import UserNotifications
 
-/// 設定シートの入力状態を保持し、UserDefaults への永続化と通知許可要求を担当する。
+/// 設定シートの入力状態を保持し、保存操作で永続化と通知許可要求を行う。
 @MainActor
 @Observable
 final class SettingsViewModel {
-    var receivesNotifications: Bool {
-        didSet {
-            userDefaults.set(receivesNotifications, forKey: Keys.receivesNotifications)
-        }
-    }
-    var morningNotificationMinutes: Int {
-        didSet {
-            userDefaults.set(morningNotificationMinutes, forKey: Keys.morningNotificationMinutes)
-        }
-    }
-    var eveningNotificationMinutes: Int {
-        didSet {
-            userDefaults.set(eveningNotificationMinutes, forKey: Keys.eveningNotificationMinutes)
-        }
-    }
-    var dayBoundaryMinutes: Int {
-        didSet {
-            userDefaults.set(dayBoundaryMinutes, forKey: Keys.dayBoundaryMinutes)
-        }
-    }
+    var receivesNotifications: Bool
+    var morningNotificationMinutes: Int
+    var eveningNotificationMinutes: Int
+    var dayBoundaryMinutes: Int
     var notificationPermissionDenied = false
+    var isSaving = false
 
     private let userDefaults: UserDefaults
     private let notificationCenter: UNUserNotificationCenter
     private let notificationUseCase: NotificationUseCase?
     private let calendar: Calendar
+    private let savedReceivesNotifications: Bool
 
     /// 永続化先と通知許可要求先を受け取る。
     init(
@@ -44,7 +30,9 @@ final class SettingsViewModel {
         self.notificationCenter = notificationCenter
         self.notificationUseCase = notificationUseCase
         self.calendar = calendar
-        self.receivesNotifications = userDefaults.bool(forKey: Keys.receivesNotifications)
+        let receivesNotifications = userDefaults.bool(forKey: Keys.receivesNotifications)
+        self.receivesNotifications = receivesNotifications
+        self.savedReceivesNotifications = receivesNotifications
         self.morningNotificationMinutes = Self.integer(
             forKey: Keys.morningNotificationMinutes,
             in: userDefaults,
@@ -62,32 +50,34 @@ final class SettingsViewModel {
         )
     }
 
-    /// 通知トグルの変更を反映し、ON の場合は通知許可を求める。
-    func setReceivesNotifications(_ isEnabled: Bool) async {
-        guard isEnabled else {
-            receivesNotifications = false
+    /// 編集中の設定を UserDefaults に保存し、必要なら通知許可要求と通知予約更新を行う。
+    func save() async -> Bool {
+        guard !isSaving else { return false }
+        isSaving = true
+        defer { isSaving = false }
+
+        if receivesNotifications && !savedReceivesNotifications {
+            do {
+                let granted = try await notificationCenter.requestAuthorization(
+                    options: [.alert, .badge, .sound]
+                )
+                receivesNotifications = granted
+                notificationPermissionDenied = !granted
+            } catch {
+                receivesNotifications = false
+                notificationPermissionDenied = true
+            }
+        } else {
             notificationPermissionDenied = false
-            await syncNotifications()
-            return
         }
 
-        do {
-            let granted = try await notificationCenter.requestAuthorization(
-                options: [.alert, .badge, .sound]
-            )
-            receivesNotifications = granted
-            notificationPermissionDenied = !granted
-            await syncNotifications()
-        } catch {
-            receivesNotifications = false
-            notificationPermissionDenied = true
-            await syncNotifications()
-        }
-    }
-
-    /// 通知設定の変更をローカル通知予約へ反映する。
-    func syncNotifications() async {
+        userDefaults.set(receivesNotifications, forKey: Keys.receivesNotifications)
+        userDefaults.set(morningNotificationMinutes, forKey: Keys.morningNotificationMinutes)
+        userDefaults.set(eveningNotificationMinutes, forKey: Keys.eveningNotificationMinutes)
+        userDefaults.set(dayBoundaryMinutes, forKey: Keys.dayBoundaryMinutes)
         try? await notificationUseCase?.execute()
+
+        return !notificationPermissionDenied
     }
 
     /// 保存値を DatePicker で扱える Date に変換する。

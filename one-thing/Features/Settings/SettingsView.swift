@@ -46,15 +46,25 @@ struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.appBackground)
-                .navigationTitle("設定")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("閉じる") {
-                            dismiss()
-                        }
+            .navigationTitle("設定")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") {
+                        dismiss()
                     }
                 }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        Task {
+                            if await viewModel.save() {
+                                dismiss()
+                            }
+                        }
+                    }
+                    .disabled(viewModel.isSaving)
+                }
+            }
         }
     }
 
@@ -62,9 +72,7 @@ struct SettingsView: View {
         Binding(
             get: { viewModel.receivesNotifications },
             set: { isEnabled in
-                Task {
-                    await viewModel.setReceivesNotifications(isEnabled)
-                }
+                viewModel.receivesNotifications = isEnabled
             }
         )
     }
@@ -76,9 +84,6 @@ struct SettingsView: View {
             },
             set: { date in
                 viewModel[keyPath: keyPath] = viewModel.minutes(from: date)
-                Task {
-                    await viewModel.syncNotifications()
-                }
             }
         )
     }
