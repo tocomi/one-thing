@@ -36,7 +36,7 @@ struct HomeView: View {
                 await viewModel.refreshForActiveScene()
             }
         }
-        .sheet(item: $presentedSheet) { sheetContent(for: $0) }
+        .sheet(item: $presentedSheet, onDismiss: refreshAfterSheetDismissal) { sheetContent(for: $0) }
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.isLoading)
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing == nil)
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing?.status)
@@ -90,6 +90,13 @@ struct HomeView: View {
         case .debugMenu:
             DebugMenuView(viewModel: viewModel)
         #endif
+        }
+    }
+
+    /// 設定変更後の日付境界をホーム表示へ反映する。
+    private func refreshAfterSheetDismissal() {
+        Task {
+            await viewModel.refreshForActiveScene()
         }
     }
 

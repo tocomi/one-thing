@@ -18,11 +18,12 @@ struct SetOneThingUseCase {
     func execute(
         title: String,
         now: Date = Date(),
-        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour
+        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour,
+        dayBoundaryMinutes: Int? = nil
     ) async throws -> Thing {
         let today = dayBoundaryUseCase.execute(
             now: now,
-            dayBoundaryHour: dayBoundaryHour
+            dayBoundaryMinutes: dayBoundaryMinutes ?? dayBoundaryHour * 60
         )
 
         if let thing = try await repository.fetchThing(on: today) {

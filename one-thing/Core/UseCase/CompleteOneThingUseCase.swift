@@ -22,11 +22,12 @@ struct CompleteOneThingUseCase {
     /// 今日の Thing を取得し、存在する場合は done に変更して保存する。
     func execute(
         now: Date = Date(),
-        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour
+        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour,
+        dayBoundaryMinutes: Int? = nil
     ) async throws -> Thing {
         let today = dayBoundaryUseCase.execute(
             now: now,
-            dayBoundaryHour: dayBoundaryHour
+            dayBoundaryMinutes: dayBoundaryMinutes ?? dayBoundaryHour * 60
         )
 
         guard let thing = try await repository.fetchThing(on: today) else {

@@ -3,6 +3,7 @@ import Foundation
 /// 日付の切り替わり時刻を考慮して、アプリ上の「今日」を決めるユースケース。
 struct DayBoundaryUseCase {
     nonisolated static let defaultBoundaryHour = 4
+    nonisolated static let defaultBoundaryMinutes = defaultBoundaryHour * 60
 
     private let calendar: Calendar
 
@@ -16,12 +17,23 @@ struct DayBoundaryUseCase {
         now: Date = Date(),
         dayBoundaryHour: Int = Self.defaultBoundaryHour
     ) -> Date {
-        let normalizedBoundaryHour = min(max(dayBoundaryHour, 0), 23)
+        execute(
+            now: now,
+            dayBoundaryMinutes: dayBoundaryHour * 60
+        )
+    }
+
+    /// 現在時刻と分単位の境界時刻から、タスクを紐づける日付の開始時刻を返す。
+    func execute(
+        now: Date = Date(),
+        dayBoundaryMinutes: Int
+    ) -> Date {
+        let normalizedBoundaryMinutes = min(max(dayBoundaryMinutes, 0), (24 * 60) - 1)
         let startOfCurrentDay = calendar.startOfDay(for: now)
 
         guard let boundaryDate = calendar.date(
-            byAdding: .hour,
-            value: normalizedBoundaryHour,
+            byAdding: .minute,
+            value: normalizedBoundaryMinutes,
             to: startOfCurrentDay
         ) else {
             return startOfCurrentDay

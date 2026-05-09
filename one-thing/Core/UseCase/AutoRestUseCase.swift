@@ -21,11 +21,12 @@ struct AutoRestUseCase {
     @discardableResult
     func execute(
         now: Date = Date(),
-        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour
+        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour,
+        dayBoundaryMinutes: Int? = nil
     ) async throws -> Thing? {
         let today = dayBoundaryUseCase.execute(
             now: now,
-            dayBoundaryHour: dayBoundaryHour
+            dayBoundaryMinutes: dayBoundaryMinutes ?? dayBoundaryHour * 60
         )
 
         guard let previousDay = calendar.date(byAdding: .day, value: -1, to: today),

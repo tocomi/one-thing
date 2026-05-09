@@ -16,6 +16,8 @@ final class HistoryViewModel {
     private let editHistoryUseCase: EditHistoryUseCase
     private let deleteHistoryUseCase: DeleteHistoryUseCase
     private let calendar: Calendar
+    private let userDefaults: UserDefaults
+    private let dayBoundaryUseCase: DayBoundaryUseCase
     private let monthFormatter: DateFormatter
     private let dayFormatter: DateFormatter
 
@@ -25,13 +27,23 @@ final class HistoryViewModel {
         editHistoryUseCase: EditHistoryUseCase,
         deleteHistoryUseCase: DeleteHistoryUseCase,
         calendar: Calendar = .autoupdatingCurrent,
+        userDefaults: UserDefaults = .standard,
+        dayBoundaryUseCase: DayBoundaryUseCase? = nil,
         initialMonth: Date = Date()
     ) {
         self.loadHistoryUseCase = loadHistoryUseCase
         self.editHistoryUseCase = editHistoryUseCase
         self.deleteHistoryUseCase = deleteHistoryUseCase
         self.calendar = calendar
-        displayedMonth = calendar.startOfDay(for: initialMonth)
+        self.userDefaults = userDefaults
+        let dayBoundaryUseCase = dayBoundaryUseCase ?? DayBoundaryUseCase(calendar: calendar)
+        self.dayBoundaryUseCase = dayBoundaryUseCase
+        displayedMonth = calendar.startOfDay(
+            for: dayBoundaryUseCase.execute(
+                now: initialMonth,
+                dayBoundaryMinutes: Self.dayBoundaryMinutes(in: userDefaults)
+            )
+        )
 
         let monthFormatter = DateFormatter()
         monthFormatter.locale = Locale(identifier: "ja_JP")
@@ -59,7 +71,7 @@ final class HistoryViewModel {
     /// 表示中の月がアプリ上の今月かどうかを返す。
     var isDisplayingCurrentMonth: Bool {
         guard let displayedMonthInterval = calendar.dateInterval(of: .month, for: displayedMonth),
-              let currentMonthInterval = calendar.dateInterval(of: .month, for: Date()) else {
+              let currentMonthInterval = calendar.dateInterval(of: .month, for: appToday()) else {
             return false
         }
 
@@ -175,7 +187,7 @@ final class HistoryViewModel {
             HistoryCalendarDay.empty(month: monthInterval.start, index: index, calendar: calendar)
         }
 
-        let today = calendar.startOfDay(for: Date())
+        let today = appToday()
 
         for day in dayRange {
             guard let date = calendar.date(byAdding: .day, value: day - 1, to: monthInterval.start) else {
@@ -208,6 +220,23 @@ final class HistoryViewModel {
         case .noChanges:
             return "変更する内容がありません。"
         }
+    }
+
+    private var currentDayBoundaryMinutes: Int {
+        Self.dayBoundaryMinutes(in: userDefaults)
+    }
+
+    private func appToday(now: Date = Date()) -> Date {
+        dayBoundaryUseCase.execute(
+            now: now,
+            dayBoundaryMinutes: currentDayBoundaryMinutes
+        )
+    }
+
+    private static func dayBoundaryMinutes(in userDefaults: UserDefaults) -> Int {
+        userDefaults.object(forKey: SettingsKeys.dayBoundaryMinutes) == nil
+            ? DayBoundaryUseCase.defaultBoundaryMinutes
+            : userDefaults.integer(forKey: SettingsKeys.dayBoundaryMinutes)
     }
 }
 

@@ -17,11 +17,12 @@ struct LoadOneThingUseCase {
     /// アプリ上の今日に該当する Thing を取得する。
     func execute(
         now: Date = Date(),
-        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour
+        dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour,
+        dayBoundaryMinutes: Int? = nil
     ) async throws -> Thing? {
         let today = dayBoundaryUseCase.execute(
             now: now,
-            dayBoundaryHour: dayBoundaryHour
+            dayBoundaryMinutes: dayBoundaryMinutes ?? dayBoundaryHour * 60
         )
 
         return try await repository.fetchThing(on: today)

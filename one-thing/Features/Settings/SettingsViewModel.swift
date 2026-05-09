@@ -45,7 +45,7 @@ final class SettingsViewModel {
         self.dayBoundaryMinutes = Self.integer(
             forKey: Keys.dayBoundaryMinutes,
             in: userDefaults,
-            defaultValue: DayBoundaryUseCase.defaultBoundaryHour * 60
+            defaultValue: DayBoundaryUseCase.defaultBoundaryMinutes
         )
     }
 

@@ -27,6 +27,7 @@ struct SuggestThingsUseCase {
     func execute(
         now: Date = Date(),
         dayBoundaryHour: Int = DayBoundaryUseCase.defaultBoundaryHour,
+        dayBoundaryMinutes: Int? = nil,
         limit: Int = 3
     ) async throws -> [String] {
         guard limit > 0 else {
@@ -35,7 +36,7 @@ struct SuggestThingsUseCase {
 
         let today = dayBoundaryUseCase.execute(
             now: now,
-            dayBoundaryHour: dayBoundaryHour
+            dayBoundaryMinutes: dayBoundaryMinutes ?? dayBoundaryHour * 60
         )
         let startDate = calendar.date(byAdding: .year, value: -1, to: today) ?? today
         let things = try await repository.fetchThings(from: startDate, to: today)

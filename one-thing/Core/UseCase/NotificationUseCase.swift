@@ -49,11 +49,11 @@ struct NotificationUseCase {
 
         let dayBoundaryMinutes = integer(
             forKey: SettingsKeys.dayBoundaryMinutes,
-            defaultValue: DayBoundaryUseCase.defaultBoundaryHour * 60
+            defaultValue: DayBoundaryUseCase.defaultBoundaryMinutes
         )
         let today = dayBoundaryUseCase.execute(
             now: now,
-            dayBoundaryHour: dayBoundaryMinutes / 60
+            dayBoundaryMinutes: dayBoundaryMinutes
         )
         let thing = try await repository.fetchThing(on: today)
 
