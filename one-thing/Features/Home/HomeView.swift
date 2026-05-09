@@ -25,7 +25,7 @@ struct HomeView: View {
             #endif
         }
         .task {
-            await viewModel.refreshForActiveScene()
+            await viewModel.refreshForActiveScene(displaysLoading: true)
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else {
@@ -93,7 +93,7 @@ struct HomeView: View {
         }
     }
 
-    /// 設定変更後の日付境界をホーム表示へ反映する。
+    /// Sheet での変更を、ホーム画面を差し替えずに表示へ反映する。
     private func refreshAfterSheetDismissal() {
         Task {
             await viewModel.refreshForActiveScene()

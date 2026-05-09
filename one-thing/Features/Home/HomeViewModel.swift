@@ -114,10 +114,16 @@ final class HomeViewModel {
     }
 
     /// 日付切り替わりを反映してから、今日の Thing を画面状態へ再読み込みする。
-    func refreshForActiveScene() async {
-        isLoading = true
+    func refreshForActiveScene(displaysLoading: Bool = false) async {
+        if displaysLoading {
+            isLoading = true
+        }
         errorMessage = nil
-        defer { isLoading = false }
+        defer {
+            if displaysLoading {
+                isLoading = false
+            }
+        }
 
         do {
             let boundaryMinutes = currentDayBoundaryMinutes
