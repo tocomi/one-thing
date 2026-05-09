@@ -6,11 +6,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var historyViewModel: HistoryViewModel
     private let notificationUseCase: NotificationUseCase?
-    @State private var isHistoryPresented = false
-    @State private var isSettingsPresented = false
-    #if DEBUG
-    @State private var isDebugMenuPresented = false
-    #endif
+    @State private var presentedSheet: HomeSheet?
 
     /// ホーム画面で利用する ViewModel を受け取る。
     init(viewModel: HomeViewModel, historyViewModel: HistoryViewModel, notificationUseCase: NotificationUseCase? = nil) {
@@ -23,9 +19,9 @@ struct HomeView: View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
             contentArea
-            HomeHeaderView(isHistoryPresented: historyPresentationBinding, isSettingsPresented: $isSettingsPresented)
+            HomeHeaderView(isHistoryPresented: historyPresentationBinding, isSettingsPresented: settingsPresentationBinding)
             #if DEBUG
-            HomeDebugMenuButton(isPresented: $isDebugMenuPresented)
+            HomeDebugMenuButton(isPresented: debugMenuPresentationBinding)
             #endif
         }
         .task {
@@ -40,15 +36,7 @@ struct HomeView: View {
                 await viewModel.refreshForActiveScene()
             }
         }
-        .sheet(isPresented: $isHistoryPresented) {
-            HistoryView(viewModel: historyViewModel)
-        }
-        .sheet(isPresented: $isSettingsPresented) { settingsSheet }
-        #if DEBUG
-        .sheet(isPresented: $isDebugMenuPresented) {
-            DebugMenuView(viewModel: viewModel)
-        }
-        #endif
+        .sheet(item: $presentedSheet) { sheetContent(for: $0) }
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.isLoading)
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing == nil)
         .animation(.spring(duration: 0.42, bounce: 0.05), value: viewModel.thing?.status)
@@ -57,19 +45,52 @@ struct HomeView: View {
     // MARK: - Content routing
 
     private var historyPresentationBinding: Binding<Bool> {
+        presentationBinding(for: .history)
+    }
+
+    private var settingsPresentationBinding: Binding<Bool> {
+        presentationBinding(for: .settings)
+    }
+
+    #if DEBUG
+    private var debugMenuPresentationBinding: Binding<Bool> {
+        presentationBinding(for: .debugMenu)
+    }
+    #endif
+
+    private func presentationBinding(for sheet: HomeSheet) -> Binding<Bool> {
         Binding(
-            get: { isHistoryPresented },
+            get: { presentedSheet == sheet },
             set: { isPresented in
                 if isPresented {
-                    historyViewModel.prepareForPresentation()
+                    present(sheet)
+                } else if presentedSheet == sheet {
+                    presentedSheet = nil
                 }
-                isHistoryPresented = isPresented
             }
         )
     }
 
-    private var settingsSheet: some View {
-        SettingsView(viewModel: SettingsViewModel(notificationUseCase: notificationUseCase))
+    private func present(_ sheet: HomeSheet) {
+        if sheet == .history {
+            historyViewModel.prepareForPresentation()
+        }
+
+        presentedSheet = sheet
+    }
+
+    @ViewBuilder
+    private func sheetContent(for sheet: HomeSheet) -> some View {
+        switch sheet {
+        case .history:
+            HistoryView(viewModel: historyViewModel)
+        case .settings:
+            SettingsView(viewModel: SettingsViewModel(notificationUseCase: notificationUseCase))
+        #if DEBUG
+        case .debugMenu:
+            DebugMenuView(viewModel: viewModel)
+        #endif
+        }
     }
 
     @ViewBuilder
