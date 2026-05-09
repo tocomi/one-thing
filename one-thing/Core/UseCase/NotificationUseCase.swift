@@ -62,7 +62,10 @@ struct NotificationUseCase {
         }
 
         if thing?.status != .done {
-            try await scheduleEveningNotification(now: now)
+            try await scheduleEveningNotification(
+                body: eveningNotificationBody(for: thing),
+                now: now
+            )
         }
     }
 
@@ -79,7 +82,7 @@ struct NotificationUseCase {
         )
     }
 
-    private func scheduleEveningNotification(now: Date) async throws {
+    private func scheduleEveningNotification(body: String, now: Date) async throws {
         let minutes = integer(
             forKey: SettingsKeys.eveningNotificationMinutes,
             defaultValue: 21 * 60
@@ -87,9 +90,18 @@ struct NotificationUseCase {
         try await notificationScheduler.schedule(
             identifier: Identifier.evening,
             title: "one-thing",
-            body: "おつかれ。今日のひとつ、どうだった？",
+            body: body,
             date: nextTriggerDate(for: minutes, now: now)
         )
+    }
+
+    /// 今日やることの登録状態に合わせた夜通知の本文を返す。
+    private func eveningNotificationBody(for thing: Thing?) -> String {
+        if thing == nil {
+            return "おつかれ。今からでもやること決めてみない？"
+        }
+
+        return "おつかれ。今日やること、どうだった？"
     }
 
     private func nextTriggerDate(for minutes: Int, now: Date) -> Date {
