@@ -20,6 +20,9 @@ import SwiftUI
             resetThingDataUseCase: ResetThingDataUseCase(
                 repository: repository
             ),
+            suggestThingsUseCase: SuggestThingsUseCase(
+                repository: repository
+            ),
             generateDebugHistoryUseCase: GenerateDebugHistoryUseCase(
                 repository: repository
             )

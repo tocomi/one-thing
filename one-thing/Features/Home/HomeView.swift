@@ -118,45 +118,18 @@ struct HomeView: View {
                     .transition(.opacity)
             }
         } else {
-            unsetView
+            HomeUnsetView(
+                dateText: viewModel.currentDateText,
+                promptText: viewModel.unsetPromptText,
+                draftTitle: $viewModel.draftTitle,
+                suggestions: viewModel.suggestions,
+                canSubmitDraft: viewModel.canSubmitDraft,
+                isSubmitting: viewModel.isSubmitting,
+                selectSuggestion: viewModel.selectSuggestion,
+                submitDraft: submitDraft
+            )
                 .transition(.opacity)
         }
-    }
-
-    // MARK: - Unset state
-
-    /// タスクがまだ設定されていない状態の入力 UI。
-    private var unsetView: some View {
-        VStack(spacing: 0) {
-            dateLabel
-                .padding(.top, 20)
-
-            Spacer()
-
-            VStack(spacing: 20) {
-                Text(viewModel.unsetPromptText)
-                    .font(.system(size: 26, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color.appPrimary)
-                    .multilineTextAlignment(.center)
-
-                draftTextField
-            }
-            .padding(.horizontal, 32)
-
-            Spacer()
-
-            PrimaryActionButton(title: "決めた！") {
-                submitDraft()
-            }
-            .disabled(!viewModel.canSubmitDraft || viewModel.isSubmitting)
-            .padding(.horizontal, 32)
-            .padding(.bottom, 8)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var draftTextField: some View {
-        ThingTextField(placeholder: "今日やること...", text: $viewModel.draftTitle)
     }
 
     // MARK: - In-progress state

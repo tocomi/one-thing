@@ -33,6 +33,9 @@ struct AppRootView: View {
                 resetThingDataUseCase: ResetThingDataUseCase(
                     repository: repository
                 ),
+                suggestThingsUseCase: SuggestThingsUseCase(
+                    repository: repository
+                ),
                 notificationUseCase: notificationUseCase,
                 generateDebugHistoryUseCase: GenerateDebugHistoryUseCase(
                     repository: repository

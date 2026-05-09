@@ -14,12 +14,14 @@ final class HomeViewModel {
     var isLoading = false
     var isSubmitting = false
     var errorMessage: String?
+    var suggestions: [String] = []
 
     private let loadOneThingUseCase: LoadOneThingUseCase
     private let setOneThingUseCase: SetOneThingUseCase
     private let completeOneThingUseCase: CompleteOneThingUseCase
     private let autoRestUseCase: AutoRestUseCase
     private let resetThingDataUseCase: ResetThingDataUseCase
+    private let suggestThingsUseCase: SuggestThingsUseCase
     private let notificationUseCase: NotificationUseCase?
     let generateDebugHistoryUseCase: GenerateDebugHistoryUseCase
     private let calendar: Calendar
@@ -39,6 +41,7 @@ final class HomeViewModel {
         completeOneThingUseCase: CompleteOneThingUseCase,
         autoRestUseCase: AutoRestUseCase,
         resetThingDataUseCase: ResetThingDataUseCase,
+        suggestThingsUseCase: SuggestThingsUseCase,
         notificationUseCase: NotificationUseCase? = nil,
         generateDebugHistoryUseCase: GenerateDebugHistoryUseCase,
         calendar: Calendar = .autoupdatingCurrent
@@ -48,6 +51,7 @@ final class HomeViewModel {
         self.completeOneThingUseCase = completeOneThingUseCase
         self.autoRestUseCase = autoRestUseCase
         self.resetThingDataUseCase = resetThingDataUseCase
+        self.suggestThingsUseCase = suggestThingsUseCase
         self.notificationUseCase = notificationUseCase
         self.generateDebugHistoryUseCase = generateDebugHistoryUseCase
         self.calendar = calendar
@@ -90,6 +94,7 @@ final class HomeViewModel {
 
         do {
             thing = try await loadOneThingUseCase.execute()
+            suggestions = thing == nil ? try await suggestThingsUseCase.execute() : []
             if thing?.status == .done {
                 updateCompletionMessage()
             }
@@ -108,6 +113,7 @@ final class HomeViewModel {
         do {
             _ = try await autoRestUseCase.execute()
             thing = try await loadOneThingUseCase.execute()
+            suggestions = thing == nil ? try await suggestThingsUseCase.execute() : []
             draftTitle = ""
             editingTitle = ""
             isEditingTitle = false
@@ -134,6 +140,7 @@ final class HomeViewModel {
         do {
             thing = try await setOneThingUseCase.execute(title: title)
             draftTitle = ""
+            suggestions = []
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -212,10 +219,16 @@ final class HomeViewModel {
             editingTitle = ""
             isEditingTitle = false
             isCompletionAnimationVisible = false
+            suggestions = try await suggestThingsUseCase.execute()
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// 履歴候補を入力欄に反映する。
+    func selectSuggestion(_ suggestion: String) {
+        draftTitle = suggestion
     }
 
     /// 完了状態で表示する称賛メッセージを選ぶ。
