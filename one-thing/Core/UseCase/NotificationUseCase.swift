@@ -57,9 +57,7 @@ struct NotificationUseCase {
         )
         let thing = try await repository.fetchThing(on: today)
 
-        if thing == nil {
-            try await scheduleMorningNotification(now: now)
-        }
+        try await scheduleMorningNotification(now: now)
 
         if thing?.status != .done {
             try await scheduleEveningNotification(
@@ -69,6 +67,7 @@ struct NotificationUseCase {
         }
     }
 
+    /// 次の朝通知時刻に、今日やることを決める通知を予約する。
     private func scheduleMorningNotification(now: Date) async throws {
         let minutes = integer(
             forKey: SettingsKeys.morningNotificationMinutes,
