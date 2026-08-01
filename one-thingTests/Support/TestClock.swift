@@ -5,7 +5,7 @@ enum TestClock {
     /// テスト全体で共有する固定 Calendar（グレゴリオ暦・Asia/Tokyo）。
     static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .gmt
         calendar.locale = Locale(identifier: "ja_JP")
         return calendar
     }()

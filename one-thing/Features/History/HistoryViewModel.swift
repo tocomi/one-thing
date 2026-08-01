@@ -71,7 +71,8 @@ final class HistoryViewModel {
     /// 表示中の月がアプリ上の今月かどうかを返す。
     var isDisplayingCurrentMonth: Bool {
         guard let displayedMonthInterval = calendar.dateInterval(of: .month, for: displayedMonth),
-              let currentMonthInterval = calendar.dateInterval(of: .month, for: appToday()) else {
+              let currentMonthInterval = calendar.dateInterval(of: .month, for: appToday())
+        else {
             return false
         }
 
@@ -174,7 +175,8 @@ final class HistoryViewModel {
 
     private func makeCalendarDays(for month: Date, things: [Thing]) -> [HistoryCalendarDay] {
         guard let monthInterval = calendar.dateInterval(of: .month, for: month),
-              let dayRange = calendar.range(of: .day, in: .month, for: monthInterval.start) else {
+              let dayRange = calendar.range(of: .day, in: .month, for: monthInterval.start)
+        else {
             return []
         }
 

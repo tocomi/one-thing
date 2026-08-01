@@ -46,11 +46,11 @@ struct HistoryDaySummaryView: View {
     private var resultText: String {
         switch thing?.status {
         case .done:
-            return "できた"
+            "できた"
         case .rested:
-            return "休んだ"
+            "休んだ"
         default:
-            return "記録なし"
+            "記録なし"
         }
     }
 }

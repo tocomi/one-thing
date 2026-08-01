@@ -62,7 +62,7 @@ final class HomeViewModel {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
         formatter.dateFormat = "M月d日 (E)"
-        self.dateFormatter = formatter
+        dateFormatter = formatter
     }
 
     /// 今日の日付をメイン画面向けの日本語表記で返す。

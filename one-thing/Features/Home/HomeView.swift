@@ -9,7 +9,11 @@ struct HomeView: View {
     @State private var presentedSheet: HomeSheet?
 
     /// ホーム画面で利用する ViewModel を受け取る。
-    init(viewModel: HomeViewModel, historyViewModel: HistoryViewModel, notificationUseCase: NotificationUseCase? = nil) {
+    init(
+        viewModel: HomeViewModel,
+        historyViewModel: HistoryViewModel,
+        notificationUseCase: NotificationUseCase? = nil
+    ) {
         self.viewModel = viewModel
         self.historyViewModel = historyViewModel
         self.notificationUseCase = notificationUseCase
@@ -19,7 +23,10 @@ struct HomeView: View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
             contentArea
-            HomeHeaderView(isHistoryPresented: historyPresentationBinding, isSettingsPresented: settingsPresentationBinding)
+            HomeHeaderView(
+                isHistoryPresented: historyPresentationBinding,
+                isSettingsPresented: settingsPresentationBinding
+            )
             #if DEBUG
             HomeDebugMenuButton(isPresented: debugMenuPresentationBinding)
             #endif
@@ -122,7 +129,7 @@ struct HomeView: View {
                     message: viewModel.completionMessage,
                     isAnimationVisible: viewModel.isCompletionAnimationVisible
                 )
-                    .transition(.opacity)
+                .transition(.opacity)
             }
         } else {
             HomeUnsetView(
@@ -135,7 +142,7 @@ struct HomeView: View {
                 selectSuggestion: viewModel.selectSuggestion,
                 submitDraft: submitDraft
             )
-                .transition(.opacity)
+            .transition(.opacity)
         }
     }
 
@@ -274,5 +281,4 @@ struct HomeView: View {
     private func completeThing() {
         Task { await viewModel.completeThing() }
     }
-
 }

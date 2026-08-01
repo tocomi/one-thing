@@ -1,6 +1,6 @@
 import Foundation
-import Testing
 @testable import one_thing
+import Testing
 
 @MainActor
 @Suite("SetOneThingUseCase")

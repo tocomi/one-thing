@@ -26,13 +26,13 @@ struct HistoryView: View {
                     isSaving: viewModel.isSaving,
                     errorMessage: viewModel.errorMessage
                 ) { date, title, status in
-                    return await viewModel.saveHistoryDay(
+                    await viewModel.saveHistoryDay(
                         date: date,
                         title: title,
                         status: status
                     )
                 } delete: { date in
-                    return await viewModel.deleteHistoryDay(date: date)
+                    await viewModel.deleteHistoryDay(date: date)
                 }
             }
             .toolbar {

@@ -184,11 +184,11 @@ struct HistoryDetailView: View {
     private func resultText(for status: ThingStatus?) -> String {
         switch status {
         case .done:
-            return "できた"
+            "できた"
         case .rested:
-            return "休んだ"
+            "休んだ"
         default:
-            return "記録なし"
+            "記録なし"
         }
     }
 

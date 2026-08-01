@@ -32,17 +32,17 @@ final class SettingsViewModel {
         self.calendar = calendar
         let receivesNotifications = userDefaults.bool(forKey: Keys.receivesNotifications)
         self.receivesNotifications = receivesNotifications
-        self.morningNotificationMinutes = Self.integer(
+        morningNotificationMinutes = Self.integer(
             forKey: Keys.morningNotificationMinutes,
             in: userDefaults,
             defaultValue: 8 * 60
         )
-        self.eveningNotificationMinutes = Self.integer(
+        eveningNotificationMinutes = Self.integer(
             forKey: Keys.eveningNotificationMinutes,
             in: userDefaults,
             defaultValue: 21 * 60
         )
-        self.dayBoundaryMinutes = Self.integer(
+        dayBoundaryMinutes = Self.integer(
             forKey: Keys.dayBoundaryMinutes,
             in: userDefaults,
             defaultValue: DayBoundaryUseCase.defaultBoundaryMinutes

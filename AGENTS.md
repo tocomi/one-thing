@@ -33,6 +33,17 @@
 - UI テストは重要なフローに絞る。
 - テストは `xcodebuild test -scheme one-thing -destination 'platform=iOS Simulator,name=iPhone 17'` で実行する。
 
+## Lint / Format
+- SwiftLint と SwiftFormat でコードスタイルを固定する。設定はリポジトリ直下の `.swiftlint.yml` と `.swiftformat`。
+- 初回のみ `brew install swiftlint swiftformat` でインストールする。
+- コマンドはリポジトリ直下で実行する。
+  - 整形: `swiftformat .`
+  - 整形チェックのみ（差分を出さない）: `swiftformat . --lint`
+  - Lint: `swiftlint`
+- コミット前に `swiftformat .` と `swiftlint` を実行し、SwiftLint の error 0 件を維持する。
+- force unwrap / force try / force cast は error にしている。300 行を超えるファイルは `file_length` の warning になる。
+- 書式は SwiftFormat が担当し、SwiftLint は書式以外を見る。両者が衝突する `trailing_comma` と `opening_brace` は設定側で揃えてある。
+
 ## 避けること
 - 大きな singleton を追加しない。
 - View から API クライアントを直接呼び出さない。

@@ -31,7 +31,8 @@ struct AutoRestUseCase {
 
         guard let previousDay = calendar.date(byAdding: .day, value: -1, to: today),
               let thing = try await repository.fetchThing(on: previousDay),
-              thing.status == .inProgress else {
+              thing.status == .inProgress
+        else {
             return nil
         }
 

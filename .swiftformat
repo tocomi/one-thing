@@ -1,0 +1,47 @@
+# SwiftFormat 設定
+# AGENTS.md の方針と .editorconfig に合わせる。
+
+# Xcode の SWIFT_VERSION（言語モード）と同じ値にそろえる。
+# 変更するときはビルド設定と同時に更新すること。
+--swiftversion 5.0
+
+# .editorconfig と揃える（indent_style = space / indent_size = 4 / end_of_line = lf /
+# trim_trailing_whitespace = true / insert_final_newline = true）
+--indent 4
+--linebreaks lf
+--trimwhitespace always
+
+# #if DEBUG のブロックはインデントしない（既存コードのスタイルに合わせる）
+--ifdef no-indent
+
+# 折り返し
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+
+# 引数を折り返しても戻り値型は `) -> Foo {` のまま同じ行に置く
+--wrapreturntype never
+
+# 属性は宣言の前の行に置く（@MainActor / @Observable など）
+--funcattributes prev-line
+--typeattributes prev-line
+
+# 範囲演算子は既存コードに合わせて詰める（0..<count）
+--ranges no-space
+
+# SwiftLint の trailing_comma（mandatory_comma: false）と揃える
+--trailingcommas never
+
+# プロトコル実装などで未使用の引数名は残す（潰すのは closure だけ）
+--stripunusedargs closure-only
+
+# `var id: Self { self }` のような 1 行プロパティは展開しない
+--disable wrapPropertyBodies
+
+# ドキュメントコメントの運用は AGENTS.md に従うため、ヘッダーコメントには手を入れない
+--header ignore
+
+# 除外
+--exclude .build,build,DerivedData

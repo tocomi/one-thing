@@ -40,7 +40,8 @@ struct DayBoundaryUseCase {
         }
 
         if now < boundaryDate,
-           let previousDay = calendar.date(byAdding: .day, value: -1, to: startOfCurrentDay) {
+           let previousDay = calendar.date(byAdding: .day, value: -1, to: startOfCurrentDay)
+        {
             return previousDay
         }
 

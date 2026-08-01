@@ -1,0 +1,72 @@
+# SwiftLint 設定
+# AGENTS.md の方針をルールとして表現する。
+
+included:
+  - one-thing
+  - one-thingTests
+
+excluded:
+  - .build
+  - build
+  - DerivedData
+
+opt_in_rules:
+  - force_unwrapping
+  - indentation_width
+  - empty_count
+  - explicit_init
+  - first_where
+  - last_where
+  - redundant_nil_coalescing
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+
+# AGENTS.md「ファイルは小さく保つ。300 行を目安の上限とする。」
+# 目安なので 300 行で warning、明確に逸脱する 400 行で error にする。
+file_length:
+  warning: 300
+  error: 400
+  ignore_comment_only_lines: true
+
+# AGENTS.md「force unwrap と force try を禁止する」
+force_unwrapping:
+  severity: error
+force_try:
+  severity: error
+force_cast:
+  severity: error
+
+# .editorconfig の indent_size = 4 と揃える
+indentation_width:
+  indentation_width: 4
+
+# 複数行に折り返した宣言・条件式の `{` は SwiftFormat の
+# wrapMultilineStatementBraces が行頭に置くため、そこは許容する。
+opening_brace:
+  ignore_multiline_type_headers: true
+  ignore_multiline_statement_conditions: true
+  ignore_multiline_function_signatures: true
+
+# SwiftFormat の --maxwidth 120 と揃える
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 250
+  error: 350
+
+function_body_length:
+  warning: 60
+  error: 100
+
+identifier_name:
+  min_length: 2
+  excluded:
+    - id
+    - to
+    # レイアウト計算の座標として慣用的に使う
+    - x
+    - y
