@@ -3,11 +3,8 @@ import SwiftUI
 /// アプリ全体のカラートークン。ライト・ダークモード双方に対応する。
 extension Color {
     /// ページ背景：暖かみのあるクリーム（ライト）/ 深いウォームブラック（ダーク）。
-    static let appBackground = Color(UIColor { tc in
-        tc.userInterfaceStyle == .dark
-            ? UIColor(red: 0.067, green: 0.063, blue: 0.055, alpha: 1)
-            : UIColor(red: 0.980, green: 0.973, blue: 0.961, alpha: 1)
-    })
+    /// Launch Screen が同じ色を参照するため、定義元は Asset Catalog の LaunchBackground に置いている。
+    static let appBackground = Color(.launchBackground)
 
     /// 入力フィールドや浮き上がる要素の面。
     static let appSurface = Color(UIColor { tc in
