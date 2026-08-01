@@ -17,6 +17,7 @@
 - `one-thing/Data`: API、永続化、リポジトリ実装。
 - `one-thing/DesignSystem`: 再利用可能な UI コンポーネントとデザイントークン。
 - `one-thing/Features`: feature 固有の View と ViewModel。
+- `one-thingTests`: ユニットテスト（`Support` に fake やテスト用ヘルパー、`UseCase` と `ViewModel` にテスト本体）。
 
 ## アーキテクチャ
 - MVVM + UseCase + Repository を優先する。
@@ -26,9 +27,11 @@
 
 ## テスト
 - 振る舞いが変わる場合は、ユースケースと ViewModel のテストを追加する。
-- リポジトリのテストでは fake や mock を使う。
+- テストフレームワークは Swift Testing（`@Suite` / `@Test` / `#expect`）を使う。
+- リポジトリのテストでは fake や mock を使う。`FakeThingRepository` を利用する。
+- 日付に依存するテストでは `TestClock` の固定 Calendar を使い、実行環境に依存させない。
 - UI テストは重要なフローに絞る。
-- テストターゲットが存在する場合は `xcodebuild test` を実行する。
+- テストは `xcodebuild test -scheme one-thing -destination 'platform=iOS Simulator,name=iPhone 17'` で実行する。
 
 ## 避けること
 - 大きな singleton を追加しない。

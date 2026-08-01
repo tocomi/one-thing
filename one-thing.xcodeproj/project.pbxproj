@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		0DA0000729000001000614EA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0D12B8562FA9AF2F000614EA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0D12B85D2FA9AF2F000614EA;
+			remoteInfo = "one-thing";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0D12B85E2FA9AF2F000614EA /* one-thing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "one-thing.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DA0000129000001000614EA /* one-thingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "one-thingTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,10 +40,22 @@
 			path = "one-thing";
 			sourceTree = "<group>";
 		};
+		0DA0000229000001000614EA /* one-thingTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "one-thingTests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0D12B85B2FA9AF2F000614EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DA0000329000001000614EA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -46,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				0D12B8602FA9AF2F000614EA /* one-thing */,
+				0DA0000229000001000614EA /* one-thingTests */,
 				0D12B85F2FA9AF2F000614EA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				0D12B85E2FA9AF2F000614EA /* one-thing.app */,
+				0DA0000129000001000614EA /* one-thingTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -83,6 +108,29 @@
 			productReference = 0D12B85E2FA9AF2F000614EA /* one-thing.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0DA0000629000001000614EA /* one-thingTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DA0000B29000001000614EA /* Build configuration list for PBXNativeTarget "one-thingTests" */;
+			buildPhases = (
+				0DA0000529000001000614EA /* Sources */,
+				0DA0000329000001000614EA /* Frameworks */,
+				0DA0000429000001000614EA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0DA0000829000001000614EA /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0DA0000229000001000614EA /* one-thingTests */,
+			);
+			name = "one-thingTests";
+			packageProductDependencies = (
+			);
+			productName = "one-thingTests";
+			productReference = 0DA0000129000001000614EA /* one-thingTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -95,6 +143,10 @@
 				TargetAttributes = {
 					0D12B85D2FA9AF2F000614EA = {
 						CreatedOnToolsVersion = 26.4.1;
+					};
+					0DA0000629000001000614EA = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 0D12B85D2FA9AF2F000614EA;
 					};
 				};
 			};
@@ -114,12 +166,20 @@
 			projectRoot = "";
 			targets = (
 				0D12B85D2FA9AF2F000614EA /* one-thing */,
+				0DA0000629000001000614EA /* one-thingTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		0D12B85C2FA9AF2F000614EA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0DA0000429000001000614EA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -136,7 +196,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0DA0000529000001000614EA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0DA0000829000001000614EA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0D12B85D2FA9AF2F000614EA /* one-thing */;
+			targetProxy = 0DA0000729000001000614EA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0D12B8672FA9AF31000614EA /* Debug */ = {
@@ -270,11 +345,11 @@
 				DEVELOPMENT_TEAM = 792DW8TQ32;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "one-thing/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ONE THING";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_FILE = "one-thing/Info.plist";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -303,11 +378,11 @@
 				DEVELOPMENT_TEAM = 792DW8TQ32;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "one-thing/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "ONE THING";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_FILE = "one-thing/Info.plist";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -323,6 +398,30 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		0DA0000929000001000614EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.tocomi.one-thingTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/one-thing.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/one-thing";
+			};
+			name = Debug;
+		};
+		0DA0000A29000001000614EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.tocomi.one-thingTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/one-thing.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/one-thing";
 			};
 			name = Release;
 		};
@@ -343,6 +442,15 @@
 			buildConfigurations = (
 				0D12B86A2FA9AF31000614EA /* Debug */,
 				0D12B86B2FA9AF31000614EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0DA0000B29000001000614EA /* Build configuration list for PBXNativeTarget "one-thingTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DA0000929000001000614EA /* Debug */,
+				0DA0000A29000001000614EA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -27,16 +27,11 @@ final class HomeViewModel {
     private let calendar: Calendar
     private let userDefaults: UserDefaults
     private let dayBoundaryUseCase: DayBoundaryUseCase
+    private let nowProvider: () -> Date
     private let dateFormatter: DateFormatter
-    private let completionMessages = [
-        "よくやった。",
-        "それだけで、十分。",
-        "今日も前に進んだ。",
-        "ひとつ、できた。",
-        "今日の自分を、ちゃんと褒めて。"
-    ]
 
-    /// HomeView で必要なユースケースと日付表示用の依存を受け取る。
+    /// HomeView で必要なユースケースと、日付表示や日付境界の判定に使う依存を受け取る。
+    /// `nowProvider` は現在時刻の取得を差し替えるためのもので、テストでは固定時刻を渡す。
     init(
         loadOneThingUseCase: LoadOneThingUseCase,
         setOneThingUseCase: SetOneThingUseCase,
@@ -48,7 +43,8 @@ final class HomeViewModel {
         generateDebugHistoryUseCase: GenerateDebugHistoryUseCase,
         calendar: Calendar = .autoupdatingCurrent,
         userDefaults: UserDefaults = .standard,
-        dayBoundaryUseCase: DayBoundaryUseCase? = nil
+        dayBoundaryUseCase: DayBoundaryUseCase? = nil,
+        nowProvider: @escaping () -> Date = { Date() }
     ) {
         self.loadOneThingUseCase = loadOneThingUseCase
         self.setOneThingUseCase = setOneThingUseCase
@@ -61,6 +57,7 @@ final class HomeViewModel {
         self.calendar = calendar
         self.userDefaults = userDefaults
         self.dayBoundaryUseCase = dayBoundaryUseCase ?? DayBoundaryUseCase(calendar: calendar)
+        self.nowProvider = nowProvider
 
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
@@ -75,7 +72,7 @@ final class HomeViewModel {
 
     /// 現在時刻に合わせた未設定状態の促し文を返す。
     var unsetPromptText: String {
-        calendar.component(.hour, from: Date()) < 12
+        calendar.component(.hour, from: nowProvider()) < 12
             ? "今日は何をする？"
             : "今日やること、決めた？"
     }
@@ -99,10 +96,18 @@ final class HomeViewModel {
         defer { isLoading = false }
 
         do {
+            // 1 回の処理内で参照する現在時刻は揃える。
+            let now = nowProvider()
             let boundaryMinutes = currentDayBoundaryMinutes
-            thing = try await loadOneThingUseCase.execute(dayBoundaryMinutes: boundaryMinutes)
+            thing = try await loadOneThingUseCase.execute(
+                now: now,
+                dayBoundaryMinutes: boundaryMinutes
+            )
             suggestions = thing == nil
-                ? try await suggestThingsUseCase.execute(dayBoundaryMinutes: boundaryMinutes)
+                ? try await suggestThingsUseCase.execute(
+                    now: now,
+                    dayBoundaryMinutes: boundaryMinutes
+                )
                 : []
             if thing?.status == .done {
                 updateCompletionMessage()
@@ -126,11 +131,18 @@ final class HomeViewModel {
         }
 
         do {
+            let now = nowProvider()
             let boundaryMinutes = currentDayBoundaryMinutes
-            _ = try await autoRestUseCase.execute(dayBoundaryMinutes: boundaryMinutes)
-            thing = try await loadOneThingUseCase.execute(dayBoundaryMinutes: boundaryMinutes)
+            _ = try await autoRestUseCase.execute(now: now, dayBoundaryMinutes: boundaryMinutes)
+            thing = try await loadOneThingUseCase.execute(
+                now: now,
+                dayBoundaryMinutes: boundaryMinutes
+            )
             suggestions = thing == nil
-                ? try await suggestThingsUseCase.execute(dayBoundaryMinutes: boundaryMinutes)
+                ? try await suggestThingsUseCase.execute(
+                    now: now,
+                    dayBoundaryMinutes: boundaryMinutes
+                )
                 : []
             draftTitle = ""
             editingTitle = ""
@@ -158,6 +170,7 @@ final class HomeViewModel {
         do {
             thing = try await setOneThingUseCase.execute(
                 title: title,
+                now: nowProvider(),
                 dayBoundaryMinutes: currentDayBoundaryMinutes
             )
             draftTitle = ""
@@ -198,6 +211,7 @@ final class HomeViewModel {
         do {
             thing = try await setOneThingUseCase.execute(
                 title: title,
+                now: nowProvider(),
                 dayBoundaryMinutes: currentDayBoundaryMinutes
             )
             editingTitle = ""
@@ -220,6 +234,7 @@ final class HomeViewModel {
 
         do {
             thing = try await completeOneThingUseCase.execute(
+                now: nowProvider(),
                 dayBoundaryMinutes: currentDayBoundaryMinutes
             )
             isEditingTitle = false
@@ -246,6 +261,7 @@ final class HomeViewModel {
             isEditingTitle = false
             isCompletionAnimationVisible = false
             suggestions = try await suggestThingsUseCase.execute(
+                now: nowProvider(),
                 dayBoundaryMinutes: currentDayBoundaryMinutes
             )
             await syncNotifications()
@@ -259,21 +275,6 @@ final class HomeViewModel {
         draftTitle = suggestion
     }
 
-    /// 完了状態で表示する称賛メッセージを選ぶ。
-    private func updateCompletionMessage() {
-        completionMessage = completionMessages.randomElement() ?? completionMessage
-    }
-
-    /// 完了直後だけ表示する短いアニメーション状態を管理する。
-    private func playCompletionAnimation() {
-        isCompletionAnimationVisible = true
-
-        Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(900))
-            self?.isCompletionAnimationVisible = false
-        }
-    }
-
     /// 現在の Thing と設定に合わせてローカル通知予約を更新する。
     private func syncNotifications() async {
         try? await notificationUseCase?.execute()
@@ -285,9 +286,9 @@ final class HomeViewModel {
             : userDefaults.integer(forKey: SettingsKeys.dayBoundaryMinutes)
     }
 
-    private func appToday(now: Date = Date()) -> Date {
+    private func appToday() -> Date {
         dayBoundaryUseCase.execute(
-            now: now,
+            now: nowProvider(),
             dayBoundaryMinutes: currentDayBoundaryMinutes
         )
     }
