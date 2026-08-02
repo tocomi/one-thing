@@ -83,6 +83,8 @@ jobs:
       # 無く、CoreData が復旧処理の診断ログを [error] レベルで大量に吐く（実害はない）。
       # これを素通しすると xcbeautify が全部 GitHub のエラー注釈に昇格させてしまい、
       # 緑のジョブに 200 件超の赤が並ぶので、xcbeautify に渡す前に落とす。
+      # アプリは同じ内容を os_log 形式（タイムスタンプ + [error] 付き）と素の
+      # `CoreData: error:` 形式の両方で吐くため、後者に合わせて広めに拾う。
       # grep -v は全行が消えたとき exit 1 になり pipefail に引っかかるため sed を使う。
       - name: Test
         run: |
@@ -95,7 +97,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            | sed -l '/ \[error\] CoreData: /d' \
+            | sed -l -E '/CoreData: (error|annotation):/d' \
             | xcbeautify --renderer github-actions
 
       # 失敗時だけ結果バンドルを残す（赤くなった原因を手元で開けるようにする）
