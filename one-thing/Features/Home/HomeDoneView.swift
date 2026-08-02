@@ -7,6 +7,9 @@ struct HomeDoneView: View {
     let message: String
     let isAnimationVisible: Bool
 
+    /// 「視差効果を減らす」が有効な環境では、拡大やバウンスを伴う演出を控える。
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(spacing: 0) {
             Text(dateText)
@@ -40,7 +43,7 @@ struct HomeDoneView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.spring(duration: 0.55, bounce: 0.2), value: isAnimationVisible)
+        .animation(completionAnimation, value: isAnimationVisible)
     }
 
     /// 完了直後に軽く広がるモノクロ寄りのチェック表現。
@@ -48,8 +51,8 @@ struct HomeDoneView: View {
         ZStack {
             Circle()
                 .stroke(Color.appAccent.opacity(isAnimationVisible ? 0.0 : 0.18), lineWidth: 1.5)
-                .frame(width: isAnimationVisible ? 104 : 68, height: isAnimationVisible ? 104 : 68)
-                .scaleEffect(isAnimationVisible ? 1.08 : 1.0)
+                .frame(width: ringDiameter, height: ringDiameter)
+                .scaleEffect(ringScale)
 
             Circle()
                 .fill(Color.appAccentSubtle)
@@ -58,12 +61,38 @@ struct HomeDoneView: View {
             Image(systemName: "checkmark")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(Color.appAccent)
-                .scaleEffect(isAnimationVisible ? 1.18 : 1.0)
+                .scaleEffect(checkmarkScale)
         }
         .frame(width: 112, height: 112)
     }
+
+    // MARK: - Motion
+
+    // Reduce Motion 時は拡大量を打ち消して基準値に固定する。輪郭の opacity だけは
+    // 動かしたままにして、完了したことが伝わる手がかりを残す。
+
+    /// バウンスは Reduce Motion で不快になりやすいため、跳ねない曲線に落とす。
+    private var completionAnimation: Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.35)
+            : .spring(duration: 0.55, bounce: 0.2)
+    }
+
+    private var ringDiameter: CGFloat {
+        isAnimationVisible && !reduceMotion ? 104 : 68
+    }
+
+    private var ringScale: CGFloat {
+        isAnimationVisible && !reduceMotion ? 1.08 : 1.0
+    }
+
+    private var checkmarkScale: CGFloat {
+        isAnimationVisible && !reduceMotion ? 1.18 : 1.0
+    }
 }
 
+// Reduce Motion は読み取り専用の環境値で Preview から注入できないため、
+// 実機・シミュレータの「設定 > アクセシビリティ > 動作」で切り替えて確認する。
 #Preview {
     HomeDoneView(
         thing: Thing(title: "散歩する", status: .done),
