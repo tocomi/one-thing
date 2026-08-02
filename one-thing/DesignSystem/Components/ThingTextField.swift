@@ -1,13 +1,16 @@
 import SwiftUI
 
 /// タスク入力・編集で共通して使うテキストフィールド。
+/// プレースホルダーは仕様上表示しないため、VoiceOver 向けのラベルだけを受け取る。
 struct ThingTextField: View {
-    let placeholder: String
+    let accessibilityLabel: String
     @Binding var text: String
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        TextField(placeholder, text: $text, axis: .vertical)
+        // 空文字のタイトルにするとプレースホルダーは出ないが VoiceOver も無名になるため、
+        // ラベルは accessibilityLabel で別に与える。
+        TextField("", text: $text, axis: .vertical)
             .font(.system(size: 19, weight: .medium, design: .rounded))
             .foregroundStyle(Color.appPrimary)
             .tint(Color.appAccent)
@@ -27,6 +30,7 @@ struct ThingTextField: View {
                             .strokeBorder(Color.appBorder, lineWidth: 1.5)
                     }
             }
+            .accessibilityLabel(accessibilityLabel)
             .onSubmit {
                 isFocused = false
             }
@@ -44,7 +48,7 @@ struct ThingTextField: View {
 #Preview {
     @Previewable @State var text = ""
 
-    ThingTextField(placeholder: "今日やること...", text: $text)
+    ThingTextField(accessibilityLabel: "今日やること", text: $text)
         .padding(32)
         .background(Color.appBackground)
 }

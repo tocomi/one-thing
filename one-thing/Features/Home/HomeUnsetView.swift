@@ -24,7 +24,7 @@ struct HomeUnsetView: View {
                     .foregroundStyle(Color.appPrimary)
                     .multilineTextAlignment(.center)
 
-                ThingTextField(placeholder: "今日やること...", text: $draftTitle)
+                ThingTextField(accessibilityLabel: "今日やること", text: $draftTitle)
 
                 if shouldShowSuggestions {
                     suggestionArea

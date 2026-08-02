@@ -120,8 +120,19 @@ struct HomeView: View {
                 .padding(32)
         } else if let thing = viewModel.thing {
             if thing.status == .inProgress {
-                inProgressView(thing: thing)
-                    .transition(.opacity)
+                HomeInProgressView(
+                    thing: thing,
+                    dateText: viewModel.currentDateText,
+                    editingTitle: $viewModel.editingTitle,
+                    isEditingTitle: viewModel.isEditingTitle,
+                    canSaveEditingTitle: viewModel.canSaveEditingTitle,
+                    isSubmitting: viewModel.isSubmitting,
+                    startEditingTitle: viewModel.startEditingTitle,
+                    cancelEditingTitle: viewModel.cancelEditingTitle,
+                    saveEditingTitle: saveEditingTitle,
+                    completeThing: completeThing
+                )
+                .transition(.opacity)
             } else {
                 HomeDoneView(
                     thing: thing,
@@ -144,128 +155,6 @@ struct HomeView: View {
             )
             .transition(.opacity)
         }
-    }
-
-    // MARK: - In-progress state
-
-    /// タスクが設定済みで完了前の状態。
-    private func inProgressView(thing: Thing) -> some View {
-        VStack(spacing: 0) {
-            dateLabel
-                .padding(.top, 20)
-
-            Spacer()
-
-            Group {
-                if viewModel.isEditingTitle {
-                    editingView
-                        .transition(.opacity)
-                } else {
-                    taskHero(thing: thing)
-                        .transition(.opacity)
-                }
-            }
-            .animation(.spring(duration: 0.32, bounce: 0.0), value: viewModel.isEditingTitle)
-
-            Spacer()
-
-            if !viewModel.isEditingTitle {
-                PrimaryActionButton(title: "できた！") {
-                    completeThing()
-                }
-                .disabled(viewModel.isSubmitting)
-                .padding(.horizontal, 32)
-                .padding(.bottom, 8)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// タスクタイトルをヒーローとして大きく表示し、編集ボタンを添える。
-    private func taskHero(thing: Thing) -> some View {
-        VStack(spacing: 20) {
-            VStack(spacing: 6) {
-                Text("今日のやること")
-                    .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color.appSecondary)
-                    .tracking(0.3)
-
-                Rectangle()
-                    .fill(Color.appDivider)
-                    .frame(maxWidth: 180, maxHeight: 1)
-            }
-
-            Text(thing.title)
-                .font(.system(size: 36, weight: .bold, design: .rounded))
-                .foregroundStyle(Color.appPrimary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(6)
-                .frame(maxWidth: 380)
-
-            Button {
-                viewModel.startEditingTitle()
-            } label: {
-                HStack(spacing: 3) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text("変更")
-                        .font(.system(.caption, design: .rounded, weight: .semibold))
-                }
-                .foregroundStyle(Color.appAccent)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Color.appAccentSubtle, in: Capsule())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("編集")
-        }
-        .padding(.horizontal, 32)
-    }
-
-    /// 進行中タスクのタイトルを編集する入力欄と操作ボタン。
-    private var editingView: some View {
-        VStack(spacing: 20) {
-            Text("今日のやること")
-                .font(.system(.subheadline, design: .rounded, weight: .medium))
-                .foregroundStyle(Color.appSecondary)
-                .tracking(0.3)
-
-            ThingTextField(placeholder: "", text: $viewModel.editingTitle)
-
-            HStack(spacing: 14) {
-                Button("キャンセル") {
-                    viewModel.cancelEditingTitle()
-                }
-                .font(.system(.subheadline, design: .rounded, weight: .medium))
-                .foregroundStyle(Color.appSecondary)
-                .disabled(viewModel.isSubmitting)
-
-                Button {
-                    saveEditingTitle()
-                } label: {
-                    Text("保存")
-                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 11)
-                        .background(Color.appAccent, in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(!viewModel.canSaveEditingTitle)
-            }
-        }
-        .padding(.horizontal, 32)
-    }
-
-    // MARK: - Shared components
-
-    private var dateLabel: some View {
-        Text(viewModel.currentDateText)
-            .font(.system(.title3, design: .rounded, weight: .medium))
-            .foregroundStyle(Color.appSecondary)
-            .tracking(0.3)
-            .frame(height: 44)
     }
 
     // MARK: - Actions
