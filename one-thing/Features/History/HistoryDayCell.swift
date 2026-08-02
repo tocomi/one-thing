@@ -95,7 +95,7 @@ struct HistoryDayCell: View {
             day: HistoryCalendarDay(
                 date: Date(),
                 dayNumber: 1,
-                thing: Thing(title: "散歩する", status: .done),
+                thing: ThingSnapshot(title: "散歩する", status: .done),
                 isToday: true,
                 isFuture: false
             ),
@@ -105,7 +105,7 @@ struct HistoryDayCell: View {
             day: HistoryCalendarDay(
                 date: Date(),
                 dayNumber: 2,
-                thing: Thing(title: "本を読む", status: .rested),
+                thing: ThingSnapshot(title: "本を読む", status: .rested),
                 isToday: false,
                 isFuture: false
             ),

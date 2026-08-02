@@ -4,7 +4,7 @@ import SwiftUI
 struct HistoryDaySummaryView: View {
     @Environment(\.dismiss) private var dismiss
     let dateText: String
-    let thing: Thing?
+    let thing: ThingSnapshot?
 
     var body: some View {
         NavigationStack {
@@ -58,6 +58,6 @@ struct HistoryDaySummaryView: View {
 #Preview {
     HistoryDaySummaryView(
         dateText: "5月8日 (金)",
-        thing: Thing(title: "散歩する", status: .done)
+        thing: ThingSnapshot(title: "散歩する", status: .done)
     )
 }

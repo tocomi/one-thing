@@ -180,8 +180,9 @@ final class HistoryViewModel {
             return []
         }
 
+        // カレンダーは表示中ずっと保持されるため、永続化オブジェクトではなく値を写して持つ。
         let thingsByDay = Dictionary(uniqueKeysWithValues: things.map {
-            (calendar.startOfDay(for: $0.date), $0)
+            (calendar.startOfDay(for: $0.date), ThingSnapshot($0))
         })
         let firstWeekday = calendar.component(.weekday, from: monthInterval.start)
         let leadingEmptyCount = (firstWeekday - calendar.firstWeekday + 7) % 7
@@ -247,7 +248,7 @@ struct HistoryCalendarDay: Identifiable, Equatable {
     let id: String
     let date: Date?
     let dayNumber: Int?
-    let thing: Thing?
+    let thing: ThingSnapshot?
     let isToday: Bool
     let isFuture: Bool
 
@@ -256,7 +257,7 @@ struct HistoryCalendarDay: Identifiable, Equatable {
         id: String? = nil,
         date: Date?,
         dayNumber: Int?,
-        thing: Thing?,
+        thing: ThingSnapshot?,
         isToday: Bool,
         isFuture: Bool
     ) {

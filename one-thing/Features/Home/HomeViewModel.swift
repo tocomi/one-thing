@@ -5,7 +5,7 @@ import Observation
 @MainActor
 @Observable
 final class HomeViewModel {
-    var thing: Thing?
+    var thing: ThingSnapshot?
     var draftTitle = ""
     var editingTitle = ""
     var isEditingTitle = false
@@ -103,6 +103,7 @@ final class HomeViewModel {
                 now: now,
                 dayBoundaryMinutes: boundaryMinutes
             )
+            .map(ThingSnapshot.init)
             suggestions = thing == nil
                 ? try await suggestThingsUseCase.execute(
                     now: now,
@@ -138,6 +139,7 @@ final class HomeViewModel {
                 now: now,
                 dayBoundaryMinutes: boundaryMinutes
             )
+            .map(ThingSnapshot.init)
             suggestions = thing == nil
                 ? try await suggestThingsUseCase.execute(
                     now: now,
@@ -168,10 +170,12 @@ final class HomeViewModel {
         defer { isSubmitting = false }
 
         do {
-            thing = try await setOneThingUseCase.execute(
-                title: title,
-                now: nowProvider(),
-                dayBoundaryMinutes: currentDayBoundaryMinutes
+            thing = try await ThingSnapshot(
+                setOneThingUseCase.execute(
+                    title: title,
+                    now: nowProvider(),
+                    dayBoundaryMinutes: currentDayBoundaryMinutes
+                )
             )
             draftTitle = ""
             suggestions = []
@@ -209,10 +213,12 @@ final class HomeViewModel {
         defer { isSubmitting = false }
 
         do {
-            thing = try await setOneThingUseCase.execute(
-                title: title,
-                now: nowProvider(),
-                dayBoundaryMinutes: currentDayBoundaryMinutes
+            thing = try await ThingSnapshot(
+                setOneThingUseCase.execute(
+                    title: title,
+                    now: nowProvider(),
+                    dayBoundaryMinutes: currentDayBoundaryMinutes
+                )
             )
             editingTitle = ""
             isEditingTitle = false
@@ -233,9 +239,11 @@ final class HomeViewModel {
         defer { isSubmitting = false }
 
         do {
-            thing = try await completeOneThingUseCase.execute(
-                now: nowProvider(),
-                dayBoundaryMinutes: currentDayBoundaryMinutes
+            thing = try await ThingSnapshot(
+                completeOneThingUseCase.execute(
+                    now: nowProvider(),
+                    dayBoundaryMinutes: currentDayBoundaryMinutes
+                )
             )
             isEditingTitle = false
             editingTitle = ""

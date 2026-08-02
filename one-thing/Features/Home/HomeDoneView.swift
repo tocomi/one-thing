@@ -2,7 +2,7 @@ import SwiftUI
 
 /// 今日の Thing を完了した後の称賛と結果を表示する。
 struct HomeDoneView: View {
-    let thing: Thing
+    let thing: ThingSnapshot
     let dateText: String
     let message: String
     let isAnimationVisible: Bool
@@ -95,7 +95,7 @@ struct HomeDoneView: View {
 // 実機・シミュレータの「設定 > アクセシビリティ > 動作」で切り替えて確認する。
 #Preview {
     HomeDoneView(
-        thing: Thing(title: "散歩する", status: .done),
+        thing: ThingSnapshot(title: "散歩する", status: .done),
         dateText: "5月7日 (木)",
         message: "ひとつ、できた。",
         isAnimationVisible: true

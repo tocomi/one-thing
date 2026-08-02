@@ -203,7 +203,7 @@ struct HistoryDetailView: View {
         day: HistoryCalendarDay(
             date: Date(),
             dayNumber: 8,
-            thing: Thing(title: "散歩する", status: .done),
+            thing: ThingSnapshot(title: "散歩する", status: .done),
             isToday: true,
             isFuture: false
         ),

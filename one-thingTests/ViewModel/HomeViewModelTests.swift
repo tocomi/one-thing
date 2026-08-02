@@ -20,6 +20,21 @@ struct HomeViewModelTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    @Test("画面状態は永続化オブジェクトではなく読み込み時点の値を保持する")
+    func loadKeepsValueSnapshot() async {
+        let thing = Thing(date: appToday(), title: "散歩する", status: .inProgress)
+        let repository = FakeThingRepository(things: [thing])
+        let viewModel = makeViewModel(repository: repository)
+
+        await viewModel.load()
+        // 保存済みオブジェクトが後から変化しても、画面状態は引きずられない。
+        thing.title = "本を読む"
+        thing.status = .done
+
+        #expect(viewModel.thing?.title == "散歩する")
+        #expect(viewModel.thing?.status == .inProgress)
+    }
+
     @Test("今日の Thing がなければ履歴から候補を表示する")
     func loadShowsSuggestionsWhenUnset() async {
         let repository = FakeThingRepository(things: [

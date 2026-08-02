@@ -2,7 +2,7 @@ import SwiftUI
 
 /// 今日のことが進行中のときに、タスク本文の表示・編集と完了操作を提供する。
 struct HomeInProgressView: View {
-    let thing: Thing
+    let thing: ThingSnapshot
     let dateText: String
     @Binding var editingTitle: String
     let isEditingTitle: Bool
@@ -130,7 +130,7 @@ struct HomeInProgressView: View {
     @Previewable @State var editingTitle = ""
 
     HomeInProgressView(
-        thing: Thing(title: "散歩する", status: .inProgress),
+        thing: ThingSnapshot(title: "散歩する", status: .inProgress),
         dateText: "5月7日 (木)",
         editingTitle: $editingTitle,
         isEditingTitle: false,
