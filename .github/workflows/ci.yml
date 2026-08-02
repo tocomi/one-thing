@@ -17,8 +17,9 @@ env:
   PROJECT: one-thing.xcodeproj
   SCHEME: one-thing
   # AGENTS.md のテスト実行コマンドと同じシミュレータ。
-  # runner には複数の iOS ランタイムが入っているため OS=latest で一意にする。
-  DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=latest
+  # runner には複数の iOS ランタイムが入っており、さらに同一デバイスが arm64 と
+  # x86_64 の両方で候補に挙がるため、OS と arch まで指定して一意にする。
+  DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=latest,arch=arm64
   DERIVED_DATA: DerivedData
 
 jobs:
@@ -77,6 +78,12 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             | xcbeautify --renderer github-actions
 
+      # テストホストがアプリ本体のため、テスト実行時に OneThingApp が起動して
+      # SwiftData のコンテナを作る。CI のシミュレータは毎回まっさらで default.store が
+      # 無く、CoreData が復旧処理の診断ログを [error] レベルで大量に吐く（実害はない）。
+      # これを素通しすると xcbeautify が全部 GitHub のエラー注釈に昇格させてしまい、
+      # 緑のジョブに 200 件超の赤が並ぶので、xcbeautify に渡す前に落とす。
+      # grep -v は全行が消えたとき exit 1 になり pipefail に引っかかるため sed を使う。
       - name: Test
         run: |
           set -o pipefail
@@ -88,6 +95,7 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            | sed -l '/ \[error\] CoreData: /d' \
             | xcbeautify --renderer github-actions
 
       # 失敗時だけ結果バンドルを残す（赤くなった原因を手元で開けるようにする）
