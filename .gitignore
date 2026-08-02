@@ -7,6 +7,9 @@ xcuserdata/
 build/
 DerivedData/
 
+# Test results (CI の -resultBundlePath 出力)
+*.xcresult/
+
 # Swift Package Manager
 .build/
 .swiftpm/

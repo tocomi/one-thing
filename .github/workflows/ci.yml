@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同じ ref で新しい push があったら、走っている実行は打ち切る
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # ローカルと同じツールチェインに固定する（macos-26 runner の既定も 26.6）。
+  # ローカルの Xcode を上げるときはここも合わせて更新すること。
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  PROJECT: one-thing.xcodeproj
+  SCHEME: one-thing
+  # AGENTS.md のテスト実行コマンドと同じシミュレータ。
+  # runner には複数の iOS ランタイムが入っているため OS=latest で一意にする。
+  DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=latest
+  DERIVED_DATA: DerivedData
+
+jobs:
+  ci:
+    # lint とビルドを 1 ジョブにまとめる。macOS runner は課金レートが高いので、
+    # 並列化より起動するランナー本数を減らすことを優先する。
+    name: Build / Test / Lint
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Show toolchain versions
+        run: |
+          xcodebuild -version
+          swiftformat --version
+
+      # macos-26 runner に SwiftFormat と xcbeautify は同梱されているが、
+      # SwiftLint は入っていないため個別に入れる。
+      - name: Install SwiftLint
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+        run: |
+          brew install swiftlint
+          swiftlint version
+
+      - name: SwiftFormat (lint)
+        run: swiftformat . --lint
+
+      - name: SwiftLint
+        # AGENTS.md の方針どおり error のみを失敗扱いにする（warning は許容）
+        run: swiftlint --reporter github-actions-logging
+
+      # 相対パスの derivedDataPath を使い、その中身をキャッシュする。
+      # 完全一致はソース変更のたびに外れるので、restore-keys で直近の状態を温める。
+      - name: Cache DerivedData
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.DERIVED_DATA }}
+          key: deriveddata-macos26-xcode26.6-${{ hashFiles('one-thing.xcodeproj/project.pbxproj', '**/*.swift') }}
+          restore-keys: |
+            deriveddata-macos26-xcode26.6-
+
+      # シミュレータ向けビルドのみを対象にし、署名は明示的に無効化する
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -derivedDataPath "$DERIVED_DATA" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      # 失敗時だけ結果バンドルを残す（赤くなった原因を手元で開けるようにする）
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: TestResults
+          path: TestResults.xcresult
+          retention-days: 7
