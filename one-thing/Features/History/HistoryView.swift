@@ -8,6 +8,9 @@ struct HistoryView: View {
         count: 7
     )
 
+    /// カレンダーの左右余白。月ページは端まで広げ、中身だけをこの幅で寄せる。
+    private static let horizontalPadding: CGFloat = 20
+
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: HistoryViewModel
 
@@ -22,8 +25,9 @@ struct HistoryView: View {
                 Color.appBackground.ignoresSafeArea()
                 content
             }
-            .task {
-                await viewModel.load()
+            // スワイプでもボタンでも、表示中の月が変わったらその月を読み込む。
+            .task(id: viewModel.displayedMonth) {
+                await viewModel.loadDisplayedMonthIfNeeded()
             }
             .sheet(item: $viewModel.selectedDay) { day in
                 HistoryDetailView(
@@ -53,24 +57,58 @@ struct HistoryView: View {
         }
     }
 
-    /// 月移動中でもヘッダーは残し、その下だけを読み込み・エラー・カレンダーで切り替える。
     private var content: some View {
         VStack(spacing: 18) {
             monthHeader
-            calendarBody
+                .padding(.horizontal, Self.horizontalPadding)
+            weekdayHeader
+                .padding(.horizontal, Self.horizontalPadding)
+            monthPages
         }
-        .padding(.horizontal, 20)
         .padding(.top, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
+    /// 月ごとのページを左右スワイプで送れるようにする。未来の月はページ自体を持たない。
+    /// ページ幅を画面幅に固定しているため、読み込み完了で中身が入れ替わってもページ位置はずれない。
+    private var monthPages: some View {
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 0) {
+                ForEach(viewModel.months, id: \.self) { month in
+                    monthPage(for: month)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                        .containerRelativeFrame(.horizontal)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollIndicators(.hidden)
+        .scrollPosition(id: displayedMonthBinding)
+        // 今月は月ページ一覧の末尾にあるため、初期表示は末尾に合わせる。
+        .defaultScrollAnchor(.trailing)
+    }
+
+    /// 月ページの位置と表示中の月を双方向でつなぐ。スワイプでの着地とボタン操作の両方がここを通る。
+    private var displayedMonthBinding: Binding<Date?> {
+        Binding(
+            get: { viewModel.displayedMonth },
+            set: { month in
+                guard let month else {
+                    return
+                }
+
+                viewModel.displayedMonth = month
+            }
+        )
+    }
+
     @ViewBuilder
-    private var calendarBody: some View {
-        if viewModel.isLoading {
-            ProgressView()
-                .tint(Color.appAccent)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let errorMessage = viewModel.errorMessage {
+    private func monthPage(for month: Date) -> some View {
+        if let days = viewModel.days(for: month) {
+            calendarGrid(days: days)
+                .padding(.horizontal, Self.horizontalPadding)
+        } else if let errorMessage = viewModel.loadError(for: month) {
             Text(errorMessage)
                 .font(.subheadline)
                 .foregroundStyle(Color.appSecondary)
@@ -78,16 +116,15 @@ struct HistoryView: View {
                 .padding(32)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            VStack(spacing: 18) {
-                weekdayHeader
-                calendarGrid
-            }
+            ProgressView()
+                .tint(Color.appAccent)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    private var calendarGrid: some View {
+    private func calendarGrid(days: [HistoryCalendarDay]) -> some View {
         LazyVGrid(columns: Self.calendarColumns, spacing: 10) {
-            ForEach(viewModel.days) { day in
+            ForEach(days) { day in
                 HistoryDayCell(day: day) {
                     guard day.date != nil, !day.isFuture else {
                         return
@@ -102,7 +139,7 @@ struct HistoryView: View {
     private var monthHeader: some View {
         HStack {
             monthButton(systemName: "chevron.left", accessibilityLabel: "前の月") {
-                await viewModel.moveToPreviousMonth()
+                viewModel.moveToPreviousMonth()
             }
             .disabled(!viewModel.canMoveToPreviousMonth)
 
@@ -115,21 +152,22 @@ struct HistoryView: View {
             Spacer()
 
             monthButton(systemName: "chevron.right", accessibilityLabel: "次の月") {
-                await viewModel.moveToNextMonth()
+                viewModel.moveToNextMonth()
             }
             .disabled(!viewModel.canMoveToNextMonth)
         }
         .frame(height: 44)
     }
 
+    /// スワイプが使えない状況でも月を送れるよう、ページ送りと同じ操作をボタンでも提供する。
     private func monthButton(
         systemName: String,
         accessibilityLabel: String,
-        action: @escaping () async -> Void
+        action: @escaping () -> Void
     ) -> some View {
         Button {
-            Task {
-                await action()
+            withAnimation {
+                action()
             }
         } label: {
             Image(systemName: systemName)
@@ -167,6 +205,7 @@ struct HistoryView: View {
     HistoryView(
         viewModel: HistoryViewModel(
             loadHistoryUseCase: LoadHistoryUseCase(repository: repository),
+            loadEarliestHistoryDateUseCase: LoadEarliestHistoryDateUseCase(repository: repository),
             editHistoryUseCase: EditHistoryUseCase(
                 repository: repository
             ),

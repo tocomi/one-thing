@@ -31,6 +31,9 @@ import SwiftUI
             loadHistoryUseCase: LoadHistoryUseCase(
                 repository: repository
             ),
+            loadEarliestHistoryDateUseCase: LoadEarliestHistoryDateUseCase(
+                repository: repository
+            ),
             editHistoryUseCase: EditHistoryUseCase(
                 repository: repository
             ),

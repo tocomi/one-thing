@@ -23,6 +23,11 @@ final class InMemoryThingRepository: ThingRepository {
             .sorted { $0.date < $1.date }
     }
 
+    /// メモリ上の配列から最も古い Thing を取得する。
+    func fetchEarliestThing() async throws -> Thing? {
+        things.min { $0.date < $1.date }
+    }
+
     /// メモリ上の配列に新しい Thing を追加する。
     func createThing(date: Date, title: String, status: ThingStatus) async throws -> Thing {
         let thing = Thing(date: date, title: title, status: status)

@@ -3,160 +3,123 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite("HistoryViewModel")
+@Suite("HistoryViewModel 月ページ")
 struct HistoryViewModelTests {
-    @Test("初期表示は今月で、翌月へは移動できない")
-    func startsAtCurrentMonth() {
-        let viewModel = makeViewModel(repository: FakeThingRepository())
+    @Test("記録がなくても既定の下限まで遡れる")
+    func startsAtCurrentMonth() async {
+        let viewModel = makeHistoryViewModel(repository: FakeThingRepository())
+
+        await viewModel.loadDisplayedMonthIfNeeded()
 
         #expect(viewModel.monthText == "2026年8月")
         #expect(viewModel.isDisplayingCurrentMonth)
         #expect(viewModel.canMoveToNextMonth == false)
+        // 過去の日は記録がなくても書けるため、記録の有無に関わらず遡れる。
         #expect(viewModel.canMoveToPreviousMonth)
+        #expect(viewModel.months.first == TestClock.day(2016, 8, 1))
+        #expect(viewModel.months.last == TestClock.day(2026, 8, 1))
+        #expect(viewModel.months.sorted() == viewModel.months)
     }
 
-    @Test("前月へ移動するとその月の履歴を読み込む")
-    func moveToPreviousMonthLoadsThatMonth() async {
+    @Test("10 年より古い記録の月にも遡れる")
+    func reachesRecordsOlderThanTenYears() async {
         let repository = FakeThingRepository(things: [
-            Thing(date: TestClock.day(2026, 7, 10), title: "散歩する", status: .done)
+            Thing(date: TestClock.day(2009, 5, 4), title: "散歩する", status: .done)
         ])
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHistoryViewModel(repository: repository)
 
-        await viewModel.moveToPreviousMonth()
+        await viewModel.loadDisplayedMonthIfNeeded()
 
-        #expect(viewModel.monthText == "2026年7月")
-        #expect(repository.fetchRanges == [
-            FakeThingRepository.FetchRange(
-                startDate: TestClock.day(2026, 7, 1),
-                endDate: TestClock.day(2026, 8, 1)
-            )
-        ])
-        #expect(viewModel.days.filter { $0.date != nil }.count == 31)
-        #expect(viewModel.days.first { $0.thing != nil }?.thing?.title == "散歩する")
-        #expect(viewModel.isLoading == false)
+        #expect(viewModel.months.first == TestClock.day(2009, 5, 1))
+        #expect(viewModel.months.contains(TestClock.day(2014, 6, 1)))
+        // 2009 年 5 月から 2026 年 8 月までの月数。
+        #expect(viewModel.months.count == 208)
     }
 
-    @Test("前月へ移動すると翌月へ戻れるようになる")
-    func moveToNextMonthReturnsToCurrentMonth() async {
-        let viewModel = makeViewModel(repository: FakeThingRepository())
+    @Test("月ページの先頭より過去へは移動しない")
+    func doesNotMoveBeforeFirstMonthPage() async {
+        let repository = FakeThingRepository(things: [
+            Thing(date: TestClock.day(2009, 5, 4), title: "散歩する", status: .done)
+        ])
+        let viewModel = makeHistoryViewModel(repository: repository)
+        await viewModel.loadDisplayedMonthIfNeeded()
+        viewModel.displayedMonth = TestClock.day(2009, 5, 1)
 
-        await viewModel.moveToPreviousMonth()
+        #expect(viewModel.canMoveToPreviousMonth == false)
+
+        viewModel.moveToPreviousMonth()
+
+        #expect(viewModel.displayedMonth == TestClock.day(2009, 5, 1))
+    }
+
+    @Test("今月表示中は翌月へ移動しない")
+    func moveToNextMonthIgnoredOnCurrentMonth() {
+        let viewModel = makeHistoryViewModel(repository: FakeThingRepository())
+
+        viewModel.moveToNextMonth()
+
+        #expect(viewModel.monthText == "2026年8月")
+    }
+
+    @Test("前月へ移動したあとは翌月へ戻れる")
+    func moveToNextMonthReturnsToCurrentMonth() async {
+        let viewModel = makeHistoryViewModel(repository: FakeThingRepository())
+        await viewModel.loadDisplayedMonthIfNeeded()
+
+        viewModel.moveToPreviousMonth()
         #expect(viewModel.canMoveToNextMonth)
 
-        await viewModel.moveToNextMonth()
+        viewModel.moveToNextMonth()
 
         #expect(viewModel.monthText == "2026年8月")
         #expect(viewModel.canMoveToNextMonth == false)
     }
 
-    @Test("今月表示中に翌月へ移動しても月は変わらない")
-    func moveToNextMonthIgnoredOnCurrentMonth() async {
-        let repository = FakeThingRepository()
-        let viewModel = makeViewModel(repository: repository)
+    @Test("開いたまま月が替わっても、ページ範囲と移動可否はずれない")
+    func keepsMonthPagesConsistentAcrossMonthChange() async {
+        let clock = MutableClock(now: TestClock.fixedNow)
+        let viewModel = makeHistoryViewModel(
+            repository: FakeThingRepository(),
+            nowProvider: { clock.now }
+        )
+        await viewModel.loadDisplayedMonthIfNeeded()
 
-        await viewModel.moveToNextMonth()
+        // シートを開いたまま月が替わった状況を再現する。
+        clock.now = TestClock.date(2026, 9, 1, 10, 0)
 
-        #expect(viewModel.monthText == "2026年8月")
-        #expect(repository.fetchRanges.isEmpty)
-    }
+        #expect(viewModel.months.last == TestClock.day(2026, 8, 1))
+        #expect(viewModel.canMoveToNextMonth == false)
+        viewModel.moveToNextMonth()
+        #expect(viewModel.displayedMonth == TestClock.day(2026, 8, 1))
 
-    @Test("読み込みの完了前に月移動を重ねてもリクエストは重複しない")
-    func monthMoveIsIgnoredWhileLoading() async {
-        let repository = FakeThingRepository()
-        repository.suspendsFetchThings = true
-        let viewModel = makeViewModel(repository: repository)
+        // 開き直したときに、基準の月とページ範囲がまとめて新しくなる。
+        viewModel.prepareForPresentation()
+        await viewModel.loadDisplayedMonthIfNeeded()
 
-        async let firstMove: Void = viewModel.moveToPreviousMonth()
-        #expect(await waitUntil { repository.fetchRanges.count == 1 })
-        #expect(viewModel.isLoading)
-
-        // 読み込みが終わる前に前月・翌月を連打した状況を再現する。
-        // ガードが外れると追加の読み込みが待機に入るため、待ち合わせずに実行して回数だけを見る。
-        async let secondMove: Void = viewModel.moveToPreviousMonth()
-        async let thirdMove: Void = viewModel.moveToNextMonth()
-        _ = await waitUntil { repository.fetchRanges.count > 1 }
-
-        #expect(repository.fetchRanges.count == 1)
-        #expect(viewModel.monthText == "2026年7月")
-
-        repository.resumeFetchThings()
-        _ = await(firstMove, secondMove, thirdMove)
-
-        #expect(viewModel.isLoading == false)
-        #expect(viewModel.monthText == "2026年7月")
-        #expect(repository.fetchRanges.count == 1)
-    }
-
-    @Test("読み込みに失敗するとエラーメッセージを表示して読み込みを終える")
-    func loadSurfacesError() async {
-        let repository = FakeThingRepository()
-        repository.errors[.fetchThings] = FakeRepositoryError()
-        let viewModel = makeViewModel(repository: repository)
-
-        await viewModel.moveToPreviousMonth()
-
-        #expect(viewModel.errorMessage != nil)
-        #expect(viewModel.days.isEmpty)
-        #expect(viewModel.isLoading == false)
-        // エラー表示のあとでも月移動は続けられる。
+        #expect(viewModel.displayedMonth == TestClock.day(2026, 9, 1))
+        #expect(viewModel.months.last == TestClock.day(2026, 9, 1))
+        #expect(viewModel.months.contains(TestClock.day(2026, 8, 1)))
+        #expect(viewModel.canMoveToNextMonth == false)
         #expect(viewModel.canMoveToPreviousMonth)
     }
 
-    @Test("再読み込みに成功すると前回のエラー表示は消える")
-    func loadClearsPreviousError() async {
-        let repository = FakeThingRepository()
-        repository.errors[.fetchThings] = FakeRepositoryError()
-        let viewModel = makeViewModel(repository: repository)
-        await viewModel.moveToPreviousMonth()
+    @Test("シート表示前の準備で今月に戻り取得済みデータを捨てる")
+    func prepareForPresentationResetsToCurrentMonth() async {
+        let repository = FakeThingRepository(things: [
+            Thing(date: TestClock.day(2026, 7, 10), title: "本を読む", status: .rested)
+        ])
+        let viewModel = makeHistoryViewModel(repository: repository)
+        await viewModel.loadDisplayedMonthIfNeeded()
+        viewModel.moveToPreviousMonth()
+        await viewModel.loadDisplayedMonthIfNeeded()
 
-        repository.errors.removeValue(forKey: .fetchThings)
-        await viewModel.moveToPreviousMonth()
+        viewModel.prepareForPresentation()
 
-        #expect(viewModel.monthText == "2026年6月")
-        #expect(viewModel.errorMessage == nil)
-        #expect(viewModel.days.isEmpty == false)
-    }
-
-    /// 並行して走らせた処理が指定の状態になるまで待つ。無限待ちを避けるため回数で打ち切る。
-    func waitUntil(_ condition: () -> Bool) async -> Bool {
-        for _ in 0..<1000 {
-            if condition() {
-                return true
-            }
-
-            await Task.yield()
-        }
-
-        return condition()
-    }
-
-    /// fake リポジトリと固定時刻を差し替えた HistoryViewModel を組み立てる。
-    func makeViewModel(
-        repository: FakeThingRepository,
-        now: Date = TestClock.fixedNow
-    ) -> HistoryViewModel {
-        HistoryViewModel(
-            loadHistoryUseCase: LoadHistoryUseCase(
-                repository: repository,
-                calendar: TestClock.calendar
-            ),
-            editHistoryUseCase: EditHistoryUseCase(repository: repository),
-            deleteHistoryUseCase: DeleteHistoryUseCase(repository: repository),
-            calendar: TestClock.calendar,
-            userDefaults: makeIsolatedUserDefaults(),
-            dayBoundaryUseCase: DayBoundaryUseCase(calendar: TestClock.calendar),
-            nowProvider: { now }
-        )
-    }
-
-    /// テスト間で設定値が混ざらないよう、テストごとに空の UserDefaults を用意する。
-    func makeIsolatedUserDefaults() -> UserDefaults {
-        let suiteName = "one-thingTests.\(UUID().uuidString)"
-
-        guard let userDefaults = UserDefaults(suiteName: suiteName) else {
-            preconditionFailure("テスト用の UserDefaults を作成できませんでした: \(suiteName)")
-        }
-
-        return userDefaults
+        #expect(viewModel.monthText == "2026年8月")
+        #expect(viewModel.days(for: TestClock.day(2026, 8, 1)) == nil)
+        #expect(viewModel.days(for: TestClock.day(2026, 7, 1)) == nil)
+        #expect(viewModel.selectedDay == nil)
+        #expect(viewModel.months.first == TestClock.day(2016, 8, 1))
+        #expect(viewModel.months.last == TestClock.day(2026, 8, 1))
     }
 }

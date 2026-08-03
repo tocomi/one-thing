@@ -17,6 +17,7 @@ final class FakeThingRepository: ThingRepository {
     enum Operation: Hashable {
         case fetchThing
         case fetchThings
+        case fetchEarliestThing
         case createThing
         case saveChanges
         case deleteThing
@@ -38,6 +39,7 @@ final class FakeThingRepository: ThingRepository {
     private(set) var things: [Thing]
     private(set) var fetchThingDates: [Date] = []
     private(set) var fetchRanges: [FetchRange] = []
+    private(set) var fetchEarliestThingCallCount = 0
     private(set) var createdThings: [Thing] = []
     private(set) var deletedDates: [Date] = []
     private(set) var saveChangesCallCount = 0
@@ -72,6 +74,13 @@ final class FakeThingRepository: ThingRepository {
         return things
             .filter { startDate <= $0.date && $0.date < endDate }
             .sorted { $0.date < $1.date }
+    }
+
+    /// 保存済みの Thing のうち最も古い 1 件を取得する。
+    func fetchEarliestThing() async throws -> Thing? {
+        try throwIfNeeded(.fetchEarliestThing)
+        fetchEarliestThingCallCount += 1
+        return things.min { $0.date < $1.date }
     }
 
     /// 新しい Thing を作成して保存先に追加する。

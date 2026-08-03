@@ -1,23 +1,33 @@
 import Foundation
 import Observation
 
-/// 履歴シートの月移動とカレンダー表示用データを管理する。
+/// 履歴シートの月ページとカレンダー表示用データを管理する。
 @MainActor
 @Observable
 final class HistoryViewModel {
+    /// 表示中の月。月ページの selection として View から双方向に更新される。
     var displayedMonth: Date
-    var days: [HistoryCalendarDay] = []
+    /// 表示できる月の一覧。昇順で、末尾は基準にしている今月。未来の月は持たない。
+    private(set) var months: [Date] = []
     var selectedDay: HistoryCalendarDay?
-    var isLoading = false
     var isSaving = false
+    /// 保存・削除の失敗を詳細シートへ伝えるメッセージ。月の読み込みエラーとは別に扱う。
     var errorMessage: String?
 
+    /// 表示中ずっと基準にする今月。
+    /// ページ範囲と移動可否をこの 1 つの値から導き、開いたまま月が替わってもずれないようにする。
+    private var currentMonth: Date
+    /// 記録から月ページの下限を決め終えたかどうか。
+    private var isMonthRangeResolved = false
+
     private let loadHistoryUseCase: LoadHistoryUseCase
+    private let loadEarliestHistoryDateUseCase: LoadEarliestHistoryDateUseCase
     private let editHistoryUseCase: EditHistoryUseCase
     private let deleteHistoryUseCase: DeleteHistoryUseCase
     private let calendar: Calendar
     private let userDefaults: UserDefaults
     private let dayBoundaryUseCase: DayBoundaryUseCase
+    private let monthCache = HistoryMonthCache()
     private let monthFormatter: DateFormatter
     private let dayFormatter: DateFormatter
     private let nowProvider: () -> Date
@@ -26,6 +36,7 @@ final class HistoryViewModel {
     /// `nowProvider` は現在時刻の取得を差し替えるためのもので、テストでは固定時刻を渡す。
     init(
         loadHistoryUseCase: LoadHistoryUseCase,
+        loadEarliestHistoryDateUseCase: LoadEarliestHistoryDateUseCase,
         editHistoryUseCase: EditHistoryUseCase,
         deleteHistoryUseCase: DeleteHistoryUseCase,
         calendar: Calendar = .autoupdatingCurrent,
@@ -34,6 +45,7 @@ final class HistoryViewModel {
         nowProvider: @escaping () -> Date = { Date() }
     ) {
         self.loadHistoryUseCase = loadHistoryUseCase
+        self.loadEarliestHistoryDateUseCase = loadEarliestHistoryDateUseCase
         self.editHistoryUseCase = editHistoryUseCase
         self.deleteHistoryUseCase = deleteHistoryUseCase
         self.calendar = calendar
@@ -41,12 +53,6 @@ final class HistoryViewModel {
         let dayBoundaryUseCase = dayBoundaryUseCase ?? DayBoundaryUseCase(calendar: calendar)
         self.dayBoundaryUseCase = dayBoundaryUseCase
         self.nowProvider = nowProvider
-        displayedMonth = calendar.startOfDay(
-            for: dayBoundaryUseCase.execute(
-                now: nowProvider(),
-                dayBoundaryMinutes: Self.dayBoundaryMinutes(in: userDefaults)
-            )
-        )
 
         let monthFormatter = DateFormatter()
         monthFormatter.locale = Locale(identifier: "ja_JP")
@@ -57,6 +63,17 @@ final class HistoryViewModel {
         dayFormatter.locale = Locale(identifier: "ja_JP")
         dayFormatter.dateFormat = "M月d日 (E)"
         self.dayFormatter = dayFormatter
+
+        let currentMonth = HistoryMonthRange.monthStart(
+            of: dayBoundaryUseCase.execute(
+                now: nowProvider(),
+                dayBoundaryMinutes: Self.dayBoundaryMinutes(in: userDefaults)
+            ),
+            calendar: calendar
+        )
+        self.currentMonth = currentMonth
+        displayedMonth = currentMonth
+        months = HistoryMonthRange.defaultMonths(endingAt: currentMonth, calendar: calendar)
     }
 
     /// 表示中の月名を返す。
@@ -71,71 +88,74 @@ final class HistoryViewModel {
         return Array(symbols[startIndex...] + symbols[..<startIndex])
     }
 
-    /// 表示中の月がアプリ上の今月かどうかを返す。
+    /// 表示中の月が基準にしている今月かどうかを返す。
     var isDisplayingCurrentMonth: Bool {
-        guard let displayedMonthInterval = calendar.dateInterval(of: .month, for: displayedMonth),
-              let currentMonthInterval = calendar.dateInterval(of: .month, for: appToday())
-        else {
-            return false
-        }
-
-        return displayedMonthInterval.start == currentMonthInterval.start
-    }
-
-    /// 前月へ移動できるかどうかを返す。読み込み中は移動できない。
-    var canMoveToPreviousMonth: Bool {
-        !isLoading
+        displayedMonth == currentMonth
     }
 
     /// 翌月へ移動できるかどうかを返す。今月より未来へは移動できない。
     var canMoveToNextMonth: Bool {
-        !isLoading && !isDisplayingCurrentMonth
+        !isDisplayingCurrentMonth
     }
 
-    /// 表示中の月の履歴を読み込む。
-    func load() async {
-        isLoading = true
-        errorMessage = nil
-        defer { isLoading = false }
-
-        do {
-            let things = try await loadHistoryUseCase.execute(monthContaining: displayedMonth)
-            days = makeCalendarDays(for: displayedMonth, things: things)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+    /// 前月へ移動できるかどうかを返す。月ページの先頭より過去へは移動できない。
+    var canMoveToPreviousMonth: Bool {
+        months.first != displayedMonth
     }
 
-    /// 履歴シート表示前に古い表示データを破棄し、読み込み状態にする。
+    /// 指定した月の表示データを返す。まだ取得していない月は nil を返す。
+    func days(for month: Date) -> [HistoryCalendarDay]? {
+        monthCache.days(for: month)
+    }
+
+    /// 指定した月を読み込み中かどうかを返す。
+    func isLoading(_ month: Date) -> Bool {
+        monthCache.isLoading(month)
+    }
+
+    /// 指定した月の読み込みエラーを返す。
+    func loadError(for month: Date) -> String? {
+        monthCache.error(for: month)
+    }
+
+    /// 月ページの範囲を必要なら決めたうえで、表示中の月をまだ持っていなければ読み込む。
+    func loadDisplayedMonthIfNeeded() async {
+        await resolveMonthRangeIfNeeded()
+        await loadMonth(displayedMonth, force: false)
+    }
+
+    /// 履歴シート表示前に、選択状態と取得済みデータを破棄して今月に戻す。
     func prepareForPresentation() {
         selectedDay = nil
-        days = []
         errorMessage = nil
-        isLoading = true
+        // 破棄より前に始まった読み込みの結果は、あとから届いても反映されない。
+        monthCache.reset()
+        currentMonth = monthStart(of: appToday())
+        displayedMonth = currentMonth
+        months = HistoryMonthRange.defaultMonths(endingAt: currentMonth, calendar: calendar)
+        isMonthRangeResolved = false
     }
 
-    /// 前月へ移動して履歴を読み込む。読み込み中の重複リクエストは無視する。
-    func moveToPreviousMonth() async {
+    /// 前月のページへ移動する。読み込み中でもページ送り自体は止めない。
+    func moveToPreviousMonth() {
         guard canMoveToPreviousMonth,
               let previousMonth = calendar.date(byAdding: .month, value: -1, to: displayedMonth)
         else {
             return
         }
 
-        displayedMonth = previousMonth
-        await load()
+        displayedMonth = monthStart(of: previousMonth)
     }
 
-    /// 翌月へ移動して履歴を読み込む。読み込み中と今月表示中は移動しない。
-    func moveToNextMonth() async {
+    /// 翌月のページへ移動する。今月を表示しているときは動かない。
+    func moveToNextMonth() {
         guard canMoveToNextMonth,
               let nextMonth = calendar.date(byAdding: .month, value: 1, to: displayedMonth)
         else {
             return
         }
 
-        displayedMonth = nextMonth
-        await load()
+        displayedMonth = monthStart(of: nextMonth)
     }
 
     /// 日次詳細シートで表示する日付文字列を返す。
@@ -143,7 +163,7 @@ final class HistoryViewModel {
         dayFormatter.string(from: date)
     }
 
-    /// 選択中の日の履歴を保存し、月カレンダーを更新する。
+    /// 選択中の日の履歴を保存し、その月のカレンダーを更新する。
     func saveHistoryDay(date: Date, title: String, status: ThingStatus) async -> Bool {
         isSaving = true
         errorMessage = nil
@@ -155,8 +175,8 @@ final class HistoryViewModel {
                 title: title,
                 status: status
             )
-            await load()
-            selectedDay = days.first {
+            await loadMonth(displayedMonth, force: true)
+            selectedDay = days(for: displayedMonth)?.first {
                 guard let dayDate = $0.date else {
                     return false
                 }
@@ -169,7 +189,7 @@ final class HistoryViewModel {
         }
     }
 
-    /// 選択中の日の履歴を削除し、月カレンダーを更新する。
+    /// 選択中の日の履歴を削除し、その月のカレンダーを更新する。
     func deleteHistoryDay(date: Date) async -> Bool {
         isSaving = true
         errorMessage = nil
@@ -177,7 +197,7 @@ final class HistoryViewModel {
 
         do {
             try await deleteHistoryUseCase.execute(date: calendar.startOfDay(for: date))
-            await load()
+            await loadMonth(displayedMonth, force: true)
             selectedDay = nil
             return true
         } catch {
@@ -186,43 +206,66 @@ final class HistoryViewModel {
         }
     }
 
-    private func makeCalendarDays(for month: Date, things: [Thing]) -> [HistoryCalendarDay] {
-        guard let monthInterval = calendar.dateInterval(of: .month, for: month),
-              let dayRange = calendar.range(of: .day, in: .month, for: monthInterval.start)
-        else {
-            return []
+    /// 最も古い記録が既定の下限より古ければ、その月まで月ページを広げる。
+    private func resolveMonthRangeIfNeeded() async {
+        guard !isMonthRangeResolved else {
+            return
         }
 
-        // カレンダーは表示中ずっと保持されるため、永続化オブジェクトではなく値を写して持つ。
-        let thingsByDay = Dictionary(uniqueKeysWithValues: things.map {
-            (calendar.startOfDay(for: $0.date), ThingSnapshot($0))
-        })
-        let firstWeekday = calendar.component(.weekday, from: monthInterval.start)
-        let leadingEmptyCount = (firstWeekday - calendar.firstWeekday + 7) % 7
-        var result = (0..<leadingEmptyCount).map { index in
-            HistoryCalendarDay.empty(month: monthInterval.start, index: index, calendar: calendar)
-        }
+        let baseMonth = currentMonth
 
-        let today = appToday()
+        do {
+            let earliestDate = try await loadEarliestHistoryDateUseCase.execute()
 
-        for day in dayRange {
-            guard let date = calendar.date(byAdding: .day, value: day - 1, to: monthInterval.start) else {
-                continue
+            // 取得中に表示をリセットしていた場合は、そのとき始まった結果を反映しない。
+            guard baseMonth == currentMonth else {
+                return
             }
 
-            let startOfDay = calendar.startOfDay(for: date)
-            result.append(
-                HistoryCalendarDay(
-                    date: date,
-                    dayNumber: day,
-                    thing: thingsByDay[startOfDay],
-                    isToday: startOfDay == today,
-                    isFuture: today < startOfDay
-                )
-            )
+            isMonthRangeResolved = true
+
+            guard let earliestMonth = earliestDate.map({ monthStart(of: $0) }),
+                  let firstMonth = months.first,
+                  earliestMonth < firstMonth
+            else {
+                return
+            }
+
+            months = HistoryMonthRange.months(from: earliestMonth, to: baseMonth, calendar: calendar)
+        } catch {
+            // 下限を広げられなくても既定の範囲は表示できるため、次の機会に決め直す。
+        }
+    }
+
+    /// 指定した月を読み込む。取得済みの月は `force` を指定したときだけ読み直す。
+    private func loadMonth(_ month: Date, force: Bool) async {
+        if !force, monthCache.days(for: month) != nil {
+            return
         }
 
-        return result
+        // 同じ月の読み込み中は引換券を得られないため、素早いページ送りでもリクエストが重複しない。
+        guard let token = monthCache.beginLoading(month) else {
+            return
+        }
+
+        do {
+            let things = try await loadHistoryUseCase.execute(monthContaining: month)
+            monthCache.finishLoading(
+                token,
+                days: HistoryCalendarDay.makeMonth(
+                    for: month,
+                    things: things,
+                    today: appToday(),
+                    calendar: calendar
+                )
+            )
+        } catch {
+            monthCache.finishLoading(token, error: error.localizedDescription)
+        }
+    }
+
+    private func monthStart(of date: Date) -> Date {
+        HistoryMonthRange.monthStart(of: date, calendar: calendar)
     }
 
     private func historyErrorMessage(for error: Error) -> String {
@@ -238,14 +281,10 @@ final class HistoryViewModel {
         }
     }
 
-    private var currentDayBoundaryMinutes: Int {
-        Self.dayBoundaryMinutes(in: userDefaults)
-    }
-
     private func appToday() -> Date {
         dayBoundaryUseCase.execute(
             now: nowProvider(),
-            dayBoundaryMinutes: currentDayBoundaryMinutes
+            dayBoundaryMinutes: Self.dayBoundaryMinutes(in: userDefaults)
         )
     }
 
@@ -253,45 +292,5 @@ final class HistoryViewModel {
         userDefaults.object(forKey: SettingsKeys.dayBoundaryMinutes) == nil
             ? DayBoundaryUseCase.defaultBoundaryMinutes
             : userDefaults.integer(forKey: SettingsKeys.dayBoundaryMinutes)
-    }
-}
-
-/// 月カレンダーの 1 マスに表示する日付と記録状態。
-struct HistoryCalendarDay: Identifiable, Equatable {
-    let id: String
-    let date: Date?
-    let dayNumber: Int?
-    let thing: ThingSnapshot?
-    let isToday: Bool
-    let isFuture: Bool
-
-    /// カレンダーセルの表示情報を受け取り、日付セルには日付由来の安定 ID を割り当てる。
-    init(
-        id: String? = nil,
-        date: Date?,
-        dayNumber: Int?,
-        thing: ThingSnapshot?,
-        isToday: Bool,
-        isFuture: Bool
-    ) {
-        self.id = id ?? date.map { "day-\(Int($0.timeIntervalSinceReferenceDate))" } ?? "empty"
-        self.date = date
-        self.dayNumber = dayNumber
-        self.thing = thing
-        self.isToday = isToday
-        self.isFuture = isFuture
-    }
-
-    /// 月初の曜日位置を合わせるための空セルを返す。
-    static func empty(month: Date, index: Int, calendar: Calendar) -> HistoryCalendarDay {
-        let monthStart = calendar.startOfDay(for: month)
-        return HistoryCalendarDay(
-            id: "empty-\(Int(monthStart.timeIntervalSinceReferenceDate))-\(index)",
-            date: nil,
-            dayNumber: nil,
-            thing: nil,
-            isToday: false,
-            isFuture: false
-        )
     }
 }

@@ -9,6 +9,9 @@ protocol ThingRepository {
     /// 指定期間に含まれる Thing を日付順で取得する。
     func fetchThings(from startDate: Date, to endDate: Date) async throws -> [Thing]
 
+    /// 保存済みの Thing のうち、最も古い 1 件を取得する。
+    func fetchEarliestThing() async throws -> Thing?
+
     /// 指定日の Thing を新規作成して保存対象に追加する。
     func createThing(date: Date, title: String, status: ThingStatus) async throws -> Thing
 

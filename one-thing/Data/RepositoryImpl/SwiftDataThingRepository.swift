@@ -35,6 +35,14 @@ struct SwiftDataThingRepository: ThingRepository {
         return try modelContext.fetch(descriptor)
     }
 
+    /// SwiftData から最も古い Thing を 1 件だけ取得する。
+    func fetchEarliestThing() async throws -> Thing? {
+        var descriptor = FetchDescriptor<Thing>(sortBy: [SortDescriptor(\.date)])
+        descriptor.fetchLimit = 1
+
+        return try modelContext.fetch(descriptor).first
+    }
+
     /// SwiftData に新しい Thing を挿入して保存する。
     func createThing(date: Date, title: String, status: ThingStatus) async throws -> Thing {
         let thing = Thing(date: date, title: title, status: status)
