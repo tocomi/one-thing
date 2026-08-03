@@ -20,8 +20,10 @@ final class HistoryViewModel {
     private let dayBoundaryUseCase: DayBoundaryUseCase
     private let monthFormatter: DateFormatter
     private let dayFormatter: DateFormatter
+    private let nowProvider: () -> Date
 
     /// 履歴読み込みユースケースと日付計算用の Calendar を受け取る。
+    /// `nowProvider` は現在時刻の取得を差し替えるためのもので、テストでは固定時刻を渡す。
     init(
         loadHistoryUseCase: LoadHistoryUseCase,
         editHistoryUseCase: EditHistoryUseCase,
@@ -29,7 +31,7 @@ final class HistoryViewModel {
         calendar: Calendar = .autoupdatingCurrent,
         userDefaults: UserDefaults = .standard,
         dayBoundaryUseCase: DayBoundaryUseCase? = nil,
-        initialMonth: Date = Date()
+        nowProvider: @escaping () -> Date = { Date() }
     ) {
         self.loadHistoryUseCase = loadHistoryUseCase
         self.editHistoryUseCase = editHistoryUseCase
@@ -38,9 +40,10 @@ final class HistoryViewModel {
         self.userDefaults = userDefaults
         let dayBoundaryUseCase = dayBoundaryUseCase ?? DayBoundaryUseCase(calendar: calendar)
         self.dayBoundaryUseCase = dayBoundaryUseCase
+        self.nowProvider = nowProvider
         displayedMonth = calendar.startOfDay(
             for: dayBoundaryUseCase.execute(
-                now: initialMonth,
+                now: nowProvider(),
                 dayBoundaryMinutes: Self.dayBoundaryMinutes(in: userDefaults)
             )
         )
@@ -79,6 +82,16 @@ final class HistoryViewModel {
         return displayedMonthInterval.start == currentMonthInterval.start
     }
 
+    /// 前月へ移動できるかどうかを返す。読み込み中は移動できない。
+    var canMoveToPreviousMonth: Bool {
+        !isLoading
+    }
+
+    /// 翌月へ移動できるかどうかを返す。今月より未来へは移動できない。
+    var canMoveToNextMonth: Bool {
+        !isLoading && !isDisplayingCurrentMonth
+    }
+
     /// 表示中の月の履歴を読み込む。
     func load() async {
         isLoading = true
@@ -101,9 +114,11 @@ final class HistoryViewModel {
         isLoading = true
     }
 
-    /// 前月へ移動して履歴を読み込む。
+    /// 前月へ移動して履歴を読み込む。読み込み中の重複リクエストは無視する。
     func moveToPreviousMonth() async {
-        guard let previousMonth = calendar.date(byAdding: .month, value: -1, to: displayedMonth) else {
+        guard canMoveToPreviousMonth,
+              let previousMonth = calendar.date(byAdding: .month, value: -1, to: displayedMonth)
+        else {
             return
         }
 
@@ -111,13 +126,11 @@ final class HistoryViewModel {
         await load()
     }
 
-    /// 翌月へ移動して履歴を読み込む。
+    /// 翌月へ移動して履歴を読み込む。読み込み中と今月表示中は移動しない。
     func moveToNextMonth() async {
-        guard !isDisplayingCurrentMonth else {
-            return
-        }
-
-        guard let nextMonth = calendar.date(byAdding: .month, value: 1, to: displayedMonth) else {
+        guard canMoveToNextMonth,
+              let nextMonth = calendar.date(byAdding: .month, value: 1, to: displayedMonth)
+        else {
             return
         }
 
@@ -229,9 +242,9 @@ final class HistoryViewModel {
         Self.dayBoundaryMinutes(in: userDefaults)
     }
 
-    private func appToday(now: Date = Date()) -> Date {
+    private func appToday() -> Date {
         dayBoundaryUseCase.execute(
-            now: now,
+            now: nowProvider(),
             dayBoundaryMinutes: currentDayBoundaryMinutes
         )
     }

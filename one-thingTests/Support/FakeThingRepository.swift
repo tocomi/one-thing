@@ -32,6 +32,9 @@ final class FakeThingRepository: ThingRepository {
     /// 操作ごとに投げるエラー。未設定の操作は正常に完了する。
     var errors: [Operation: Error] = [:]
 
+    /// true の間 fetchThings を待機させ、読み込み中の状態をテストから再現できるようにする。
+    var suspendsFetchThings = false
+
     private(set) var things: [Thing]
     private(set) var fetchThingDates: [Date] = []
     private(set) var fetchRanges: [FetchRange] = []
@@ -39,6 +42,8 @@ final class FakeThingRepository: ThingRepository {
     private(set) var deletedDates: [Date] = []
     private(set) var saveChangesCallCount = 0
     private(set) var deleteAllThingsCallCount = 0
+
+    private var suspendedFetchThings: [CheckedContinuation<Void, Never>] = []
 
     /// 初期データを受け取り、メモリ内の保存先を準備する。
     init(things: [Thing] = []) {
@@ -55,7 +60,14 @@ final class FakeThingRepository: ThingRepository {
     /// 開始日以上・終了日未満の Thing を日付昇順で取得する。
     func fetchThings(from startDate: Date, to endDate: Date) async throws -> [Thing] {
         try throwIfNeeded(.fetchThings)
+        // 呼び出し自体は待機前に記録し、待機中でも呼ばれた回数を検証できるようにする。
         fetchRanges.append(FetchRange(startDate: startDate, endDate: endDate))
+
+        if suspendsFetchThings {
+            await withCheckedContinuation { continuation in
+                suspendedFetchThings.append(continuation)
+            }
+        }
 
         return things
             .filter { startDate <= $0.date && $0.date < endDate }
@@ -90,6 +102,13 @@ final class FakeThingRepository: ThingRepository {
         try throwIfNeeded(.deleteAllThings)
         deleteAllThingsCallCount += 1
         things.removeAll()
+    }
+
+    /// 待機中の fetchThings をすべて再開させる。
+    func resumeFetchThings() {
+        let continuations = suspendedFetchThings
+        suspendedFetchThings = []
+        continuations.forEach { $0.resume() }
     }
 
     /// 検証用に、保存されている指定日の Thing を同期的に取り出す。

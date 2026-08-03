@@ -2,6 +2,12 @@ import SwiftUI
 
 /// 月ごとの達成・休息履歴を表示するシート。
 struct HistoryView: View {
+    /// 曜日ヘッダーとカレンダー本体で共有する 7 列の Grid 定義。
+    private static let calendarColumns = Array(
+        repeating: GridItem(.flexible(), spacing: 8),
+        count: 7
+    )
+
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: HistoryViewModel
 
@@ -47,45 +53,50 @@ struct HistoryView: View {
         }
     }
 
-    @ViewBuilder
+    /// 月移動中でもヘッダーは残し、その下だけを読み込み・エラー・カレンダーで切り替える。
     private var content: some View {
+        VStack(spacing: 18) {
+            monthHeader
+            calendarBody
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder
+    private var calendarBody: some View {
         if viewModel.isLoading {
             ProgressView()
                 .tint(Color.appAccent)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let errorMessage = viewModel.errorMessage {
             Text(errorMessage)
                 .font(.subheadline)
                 .foregroundStyle(Color.appSecondary)
                 .multilineTextAlignment(.center)
                 .padding(32)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            calendarGrid
+            VStack(spacing: 18) {
+                weekdayHeader
+                calendarGrid
+            }
         }
     }
 
     private var calendarGrid: some View {
-        VStack(spacing: 18) {
-            monthHeader
-            weekdayHeader
-
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7),
-                spacing: 10
-            ) {
-                ForEach(viewModel.days) { day in
-                    HistoryDayCell(day: day) {
-                        guard day.date != nil, !day.isFuture else {
-                            return
-                        }
-
-                        viewModel.selectedDay = day
+        LazyVGrid(columns: Self.calendarColumns, spacing: 10) {
+            ForEach(viewModel.days) { day in
+                HistoryDayCell(day: day) {
+                    guard day.date != nil, !day.isFuture else {
+                        return
                     }
+
+                    viewModel.selectedDay = day
                 }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var monthHeader: some View {
@@ -93,6 +104,7 @@ struct HistoryView: View {
             monthButton(systemName: "chevron.left", accessibilityLabel: "前の月") {
                 await viewModel.moveToPreviousMonth()
             }
+            .disabled(!viewModel.canMoveToPreviousMonth)
 
             Spacer()
 
@@ -105,7 +117,7 @@ struct HistoryView: View {
             monthButton(systemName: "chevron.right", accessibilityLabel: "次の月") {
                 await viewModel.moveToNextMonth()
             }
-            .disabled(viewModel.isDisplayingCurrentMonth)
+            .disabled(!viewModel.canMoveToNextMonth)
         }
         .frame(height: 44)
     }
@@ -131,10 +143,7 @@ struct HistoryView: View {
     }
 
     private var weekdayHeader: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7),
-            spacing: 0
-        ) {
+        LazyVGrid(columns: Self.calendarColumns, spacing: 0) {
             ForEach(viewModel.weekdaySymbols, id: \.self) { symbol in
                 Text(symbol)
                     .font(.system(.caption, design: .rounded, weight: .medium))
