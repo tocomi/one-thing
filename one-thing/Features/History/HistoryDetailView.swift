@@ -6,7 +6,6 @@ struct HistoryDetailView: View {
     @State private var title: String
     @State private var status: ThingStatus
     @State private var isDeleteConfirmationPresented = false
-    @FocusState private var isTitleFocused: Bool
 
     let dateText: String
     let day: HistoryCalendarDay
@@ -36,9 +35,24 @@ struct HistoryDetailView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
+            VStack(alignment: .leading, spacing: 24) {
                 header
-                formContent
+                    .frame(maxWidth: .infinity)
+
+                VStack(alignment: .leading, spacing: 18) {
+                    HistoryDetailFormView(title: $title, status: $status)
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.system(.footnote, design: .rounded))
+                            .foregroundStyle(Color.appAccent)
+                    }
+
+                    if canDelete {
+                        deleteButton
+                    }
+                }
+
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -90,61 +104,17 @@ struct HistoryDetailView: View {
         }
     }
 
-    private var formContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("やったこと")
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.appPrimary)
-
-                TextField("やったことを入力", text: $title, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(.body, design: .rounded))
-                    .foregroundStyle(Color.appPrimary)
-                    .padding(14)
-                    .background(Color.white.opacity(0.72))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .submitLabel(.done)
-                    .focused($isTitleFocused)
-                    .onSubmit { isTitleFocused = false }
-                    .onChange(of: title) { _, newValue in
-                        guard newValue.contains("\n") else { return }
-                        title = newValue.replacingOccurrences(of: "\n", with: "")
-                        isTitleFocused = false
-                    }
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("結果")
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.appPrimary)
-
-                Picker("結果", selection: $status) {
-                    Text("できた").tag(ThingStatus.done)
-                    Text("休んだ").tag(ThingStatus.rested)
-                }
-                .pickerStyle(.segmented)
-            }
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.system(.footnote, design: .rounded))
-                    .foregroundStyle(Color.appAccent)
-            }
-
-            if canDelete {
-                Button(role: .destructive) {
-                    isDeleteConfirmationPresented = true
-                } label: {
-                    Label("この日の記録を削除", systemImage: "trash")
-                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .tint(Color.appAccent)
-                .disabled(isSaving)
-            }
+    private var deleteButton: some View {
+        Button(role: .destructive) {
+            isDeleteConfirmationPresented = true
+        } label: {
+            Label("この日の記録を削除", systemImage: "trash")
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.bordered)
+        .tint(Color.appAccent)
+        .disabled(isSaving)
     }
 
     private var canSave: Bool {

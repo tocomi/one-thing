@@ -5,7 +5,21 @@ import SwiftUI
 struct ThingTextField: View {
     let accessibilityLabel: String
     @Binding var text: String
+    let maxWidth: CGFloat
     @FocusState private var isFocused: Bool
+
+    /// VoiceOver 用のラベルと入力内容を受け取る。
+    /// `maxWidth` はホームの中央寄せレイアウトに合わせた既定値を持ち、
+    /// 幅いっぱいに広げたい画面では `.infinity` を渡す。
+    init(
+        accessibilityLabel: String,
+        text: Binding<String>,
+        maxWidth: CGFloat = 360
+    ) {
+        self.accessibilityLabel = accessibilityLabel
+        _text = text
+        self.maxWidth = maxWidth
+    }
 
     var body: some View {
         // 空文字のタイトルにするとプレースホルダーは出ないが VoiceOver も無名になるため、
@@ -20,7 +34,7 @@ struct ThingTextField: View {
             .multilineTextAlignment(.leading)
             .padding(.horizontal, 18)
             .padding(.vertical, 15)
-            .frame(maxWidth: 360, minHeight: 58, alignment: .topLeading)
+            .frame(maxWidth: maxWidth, minHeight: 58, alignment: .topLeading)
             .focused($isFocused)
             .background {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
