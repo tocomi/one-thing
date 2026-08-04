@@ -17,6 +17,7 @@
 - `one-thing/Data`: API、永続化、リポジトリ実装。
 - `one-thing/DesignSystem`: 再利用可能な UI コンポーネントとデザイントークン。
 - `one-thing/Features`: feature 固有の View と ViewModel。
+- `one-thing-widget`: ウィジェット Extension。`DesignSystem` などアプリ側のファイルは Target Membership で共有する。
 - `one-thingTests`: ユニットテスト（`Support` に fake やテスト用ヘルパー、`UseCase` と `ViewModel` にテスト本体）。
 
 ## アーキテクチャ

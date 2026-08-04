@@ -3,6 +3,7 @@
 
 included:
   - one-thing
+  - one-thing-widget
   - one-thingTests
 
 excluded:

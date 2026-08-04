@@ -3,7 +3,9 @@ import SwiftUI
 /// アプリ全体のカラートークン。ライト・ダークモード双方に対応する。
 extension Color {
     /// ページ背景：暖かみのあるクリーム（ライト）/ 深いウォームブラック（ダーク）。
-    /// Launch Screen が同じ色を参照するため、定義元は Asset Catalog の LaunchBackground に置いている。
+    /// Launch Screen が Info.plist から名前で参照するため、定義元は Asset Catalog に置いている。
+    /// カタログ名が LaunchBackground のままなのは、改名すると生成される `Color` の
+    /// シンボルがこのプロパティ名と衝突するため。
     static let appBackground = Color(.launchBackground)
 
     /// 入力フィールドや浮き上がる要素の面。
