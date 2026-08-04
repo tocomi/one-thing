@@ -10,7 +10,7 @@ struct HomeViewModelTests {
         let repository = FakeThingRepository(things: [
             Thing(date: appToday(), title: "散歩する", status: .inProgress)
         ])
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
 
         await viewModel.load()
 
@@ -24,7 +24,7 @@ struct HomeViewModelTests {
     func loadKeepsValueSnapshot() async {
         let thing = Thing(date: appToday(), title: "散歩する", status: .inProgress)
         let repository = FakeThingRepository(things: [thing])
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
 
         await viewModel.load()
         // 保存済みオブジェクトが後から変化しても、画面状態は引きずられない。
@@ -42,7 +42,7 @@ struct HomeViewModelTests {
             Thing(date: pastDay(2), title: "散歩する", status: .done),
             Thing(date: pastDay(3), title: "本を読む", status: .done)
         ])
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
 
         await viewModel.load()
 
@@ -54,7 +54,7 @@ struct HomeViewModelTests {
     func loadSurfacesError() async {
         let repository = FakeThingRepository()
         repository.errors[.fetchThing] = FakeRepositoryError()
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
 
         await viewModel.load()
 
@@ -65,7 +65,7 @@ struct HomeViewModelTests {
     @Test("入力内容を保存すると今日の Thing になり入力欄が空になる")
     func submitDraftSavesThing() async {
         let repository = FakeThingRepository()
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
         viewModel.draftTitle = "  散歩する  "
 
         await viewModel.submitDraft()
@@ -80,7 +80,7 @@ struct HomeViewModelTests {
     @Test("空白だけの入力は保存しない")
     func submitDraftIgnoresBlankTitle() async {
         let repository = FakeThingRepository()
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
         viewModel.draftTitle = "   "
 
         await viewModel.submitDraft()
@@ -92,7 +92,7 @@ struct HomeViewModelTests {
 
     @Test("候補を選ぶと入力欄に反映される")
     func selectSuggestionFillsDraft() {
-        let viewModel = makeViewModel(repository: FakeThingRepository())
+        let viewModel = makeHomeViewModel(repository: FakeThingRepository())
 
         viewModel.selectSuggestion("散歩する")
 
@@ -105,7 +105,7 @@ struct HomeViewModelTests {
         let repository = FakeThingRepository(things: [
             Thing(date: appToday(), title: "本を読む", status: .inProgress)
         ])
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
         await viewModel.load()
 
         viewModel.startEditingTitle()
@@ -124,7 +124,7 @@ struct HomeViewModelTests {
         let repository = FakeThingRepository(things: [
             Thing(date: appToday(), title: "散歩する", status: .inProgress)
         ])
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
         await viewModel.load()
 
         await viewModel.completeThing()
@@ -136,7 +136,7 @@ struct HomeViewModelTests {
     @Test("Thing が未設定なら完了操作は何もしない")
     func completeThingIgnoresUnsetState() async {
         let repository = FakeThingRepository()
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
 
         await viewModel.completeThing()
 
@@ -150,7 +150,7 @@ struct HomeViewModelTests {
         let repository = FakeThingRepository(things: [
             Thing(date: TestClock.day(2026, 7, 31), title: "散歩する", status: .inProgress)
         ])
-        let viewModel = makeViewModel(
+        let viewModel = makeHomeViewModel(
             repository: repository,
             now: TestClock.date(2026, 8, 1, 3, 0)
         )
@@ -166,7 +166,7 @@ struct HomeViewModelTests {
         let repository = FakeThingRepository(things: [
             Thing(date: TestClock.day(2026, 7, 31), title: "散歩する", status: .inProgress)
         ])
-        let viewModel = makeViewModel(
+        let viewModel = makeHomeViewModel(
             repository: repository,
             now: TestClock.date(2026, 8, 1, 4, 0)
         )
@@ -179,11 +179,11 @@ struct HomeViewModelTests {
 
     @Test("未設定時の促し文は注入した時刻で切り替わる")
     func unsetPromptTextFollowsInjectedTime() {
-        let morning = makeViewModel(
+        let morning = makeHomeViewModel(
             repository: FakeThingRepository(),
             now: TestClock.date(2026, 8, 1, 11, 59)
         )
-        let afternoon = makeViewModel(
+        let afternoon = makeHomeViewModel(
             repository: FakeThingRepository(),
             now: TestClock.date(2026, 8, 1, 12, 0)
         )
@@ -197,7 +197,7 @@ struct HomeViewModelTests {
         let repository = FakeThingRepository(things: [
             Thing(date: appToday(), title: "散歩する", status: .inProgress)
         ])
-        let viewModel = makeViewModel(repository: repository)
+        let viewModel = makeHomeViewModel(repository: repository)
         await viewModel.load()
 
         await viewModel.resetSavedDataForDebug()
@@ -205,72 +205,5 @@ struct HomeViewModelTests {
         #expect(viewModel.thing == nil)
         #expect(viewModel.suggestions.isEmpty)
         #expect(repository.deleteAllThingsCallCount == 1)
-    }
-}
-
-// MARK: - Helpers
-
-private extension HomeViewModelTests {
-    /// HomeViewModel に固定時刻を注入しているため、テスト側の「今日」も固定値で表せる。
-    func appToday() -> Date {
-        TestClock.fixedToday
-    }
-
-    /// 今日から指定日数さかのぼった日付を返す。
-    func pastDay(_ offset: Int) -> Date {
-        TestClock.calendar.date(byAdding: .day, value: -offset, to: appToday()) ?? appToday()
-    }
-
-    /// fake リポジトリと固定時刻を差し替えた HomeViewModel を組み立てる。
-    func makeViewModel(
-        repository: FakeThingRepository,
-        now: Date = TestClock.fixedNow
-    ) -> HomeViewModel {
-        let dayBoundaryUseCase = DayBoundaryUseCase(calendar: TestClock.calendar)
-
-        return HomeViewModel(
-            loadOneThingUseCase: LoadOneThingUseCase(
-                repository: repository,
-                dayBoundaryUseCase: dayBoundaryUseCase
-            ),
-            setOneThingUseCase: SetOneThingUseCase(
-                repository: repository,
-                dayBoundaryUseCase: dayBoundaryUseCase
-            ),
-            completeOneThingUseCase: CompleteOneThingUseCase(
-                repository: repository,
-                dayBoundaryUseCase: dayBoundaryUseCase
-            ),
-            autoRestUseCase: AutoRestUseCase(
-                repository: repository,
-                dayBoundaryUseCase: dayBoundaryUseCase,
-                calendar: TestClock.calendar
-            ),
-            resetThingDataUseCase: ResetThingDataUseCase(repository: repository),
-            suggestThingsUseCase: SuggestThingsUseCase(
-                repository: repository,
-                dayBoundaryUseCase: dayBoundaryUseCase,
-                calendar: TestClock.calendar
-            ),
-            generateDebugHistoryUseCase: GenerateDebugHistoryUseCase(
-                repository: repository,
-                calendar: TestClock.calendar
-            ),
-            calendar: TestClock.calendar,
-            userDefaults: makeIsolatedUserDefaults(),
-            dayBoundaryUseCase: dayBoundaryUseCase,
-            nowProvider: { now }
-        )
-    }
-
-    /// テスト間で設定値が混ざらないよう、テストごとに空の UserDefaults を用意する。
-    func makeIsolatedUserDefaults() -> UserDefaults {
-        let suiteName = "one-thingTests.\(UUID().uuidString)"
-
-        guard let userDefaults = UserDefaults(suiteName: suiteName) else {
-            preconditionFailure("テスト用の UserDefaults を作成できませんでした: \(suiteName)")
-        }
-
-        return userDefaults
     }
 }

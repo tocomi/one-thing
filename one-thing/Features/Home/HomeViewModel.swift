@@ -98,21 +98,7 @@ final class HomeViewModel {
         do {
             // 1 回の処理内で参照する現在時刻は揃える。
             let now = nowProvider()
-            let boundaryMinutes = currentDayBoundaryMinutes
-            thing = try await loadOneThingUseCase.execute(
-                now: now,
-                dayBoundaryMinutes: boundaryMinutes
-            )
-            .map(ThingSnapshot.init)
-            suggestions = thing == nil
-                ? try await suggestThingsUseCase.execute(
-                    now: now,
-                    dayBoundaryMinutes: boundaryMinutes
-                )
-                : []
-            if thing?.status == .done {
-                updateCompletionMessage()
-            }
+            try await applyTodayState(now: now, boundaryMinutes: currentDayBoundaryMinutes)
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -135,23 +121,10 @@ final class HomeViewModel {
             let now = nowProvider()
             let boundaryMinutes = currentDayBoundaryMinutes
             _ = try await autoRestUseCase.execute(now: now, dayBoundaryMinutes: boundaryMinutes)
-            thing = try await loadOneThingUseCase.execute(
-                now: now,
-                dayBoundaryMinutes: boundaryMinutes
-            )
-            .map(ThingSnapshot.init)
-            suggestions = thing == nil
-                ? try await suggestThingsUseCase.execute(
-                    now: now,
-                    dayBoundaryMinutes: boundaryMinutes
-                )
-                : []
+            try await applyTodayState(now: now, boundaryMinutes: boundaryMinutes)
             draftTitle = ""
             editingTitle = ""
             isEditingTitle = false
-            if thing?.status == .done {
-                updateCompletionMessage()
-            }
             await syncNotifications()
         } catch {
             errorMessage = error.localizedDescription
@@ -247,7 +220,9 @@ final class HomeViewModel {
             )
             isEditingTitle = false
             editingTitle = ""
-            updateCompletionMessage()
+            if let thing {
+                updateCompletionMessage(for: thing.id)
+            }
             await syncNotifications()
             playCompletionAnimation()
         } catch {
@@ -281,6 +256,25 @@ final class HomeViewModel {
     /// 履歴候補を入力欄に反映する。
     func selectSuggestion(_ suggestion: String) {
         draftTitle = suggestion
+    }
+
+    /// 今日の Thing と候補、完了メッセージを読み込んで画面状態へ反映する。
+    /// 初回読み込みと再読み込みで同じ結果になるよう、両方からこの処理を通す。
+    private func applyTodayState(now: Date, boundaryMinutes: Int) async throws {
+        thing = try await loadOneThingUseCase.execute(
+            now: now,
+            dayBoundaryMinutes: boundaryMinutes
+        )
+        .map(ThingSnapshot.init)
+        suggestions = thing == nil
+            ? try await suggestThingsUseCase.execute(
+                now: now,
+                dayBoundaryMinutes: boundaryMinutes
+            )
+            : []
+        if let thing, thing.status == .done {
+            updateCompletionMessage(for: thing.id)
+        }
     }
 
     /// 現在の Thing と設定に合わせてローカル通知予約を更新する。
