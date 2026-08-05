@@ -55,7 +55,9 @@ struct AppRootView: View {
                     repository: repository
                 )
             ),
-            notificationUseCase: notificationUseCase
+            makeSettingsViewModel: {
+                SettingsViewModel(notificationUseCase: notificationUseCase)
+            }
         )
     }
 }

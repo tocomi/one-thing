@@ -15,19 +15,19 @@ final class SettingsViewModel {
     var isRequestingNotificationPermission = false
 
     private let userDefaults: UserDefaults
-    private let notificationCenter: UNUserNotificationCenter
+    private let notificationAuthorizing: NotificationAuthorizing
     private let notificationUseCase: NotificationUseCase?
     private let calendar: Calendar
 
     /// 永続化先と通知許可要求先を受け取る。
     init(
         userDefaults: UserDefaults = .standard,
-        notificationCenter: UNUserNotificationCenter = .current(),
+        notificationAuthorizing: NotificationAuthorizing = UNUserNotificationCenter.current(),
         notificationUseCase: NotificationUseCase? = nil,
         calendar: Calendar = .autoupdatingCurrent
     ) {
         self.userDefaults = userDefaults
-        self.notificationCenter = notificationCenter
+        self.notificationAuthorizing = notificationAuthorizing
         self.notificationUseCase = notificationUseCase
         self.calendar = calendar
         let receivesNotifications = userDefaults.bool(forKey: Keys.receivesNotifications)
@@ -63,9 +63,7 @@ final class SettingsViewModel {
         defer { isRequestingNotificationPermission = false }
 
         do {
-            let granted = try await notificationCenter.requestAuthorization(
-                options: [.alert, .badge, .sound]
-            )
+            let granted = try await notificationAuthorizing.requestAuthorization()
             receivesNotifications = granted
             notificationPermissionDenied = !granted
         } catch {

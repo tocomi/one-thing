@@ -10,6 +10,12 @@ protocol NotificationScheduling {
     func cancelPendingNotifications(identifiers: [String])
 }
 
+/// 通知許可の要求を抽象化する。Preview やテストで実際の許可ダイアログを出さないために挟む。
+protocol NotificationAuthorizing {
+    /// 通知の表示許可を求め、許可されたかどうかを返す。
+    func requestAuthorization() async throws -> Bool
+}
+
 /// 現在の設定と今日の Thing の状態に合わせてローカル通知を予約する。
 struct NotificationUseCase {
     private enum Identifier {

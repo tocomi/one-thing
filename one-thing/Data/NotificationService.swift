@@ -41,3 +41,11 @@ struct NotificationService: NotificationScheduling {
         notificationCenter.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 }
+
+/// OS の通知センターを、そのまま通知許可の要求先として扱えるようにする。
+extension UNUserNotificationCenter: NotificationAuthorizing {
+    /// アラート・バッジ・サウンドの表示許可を求める。
+    public func requestAuthorization() async throws -> Bool {
+        try await requestAuthorization(options: [.alert, .badge, .sound])
+    }
+}

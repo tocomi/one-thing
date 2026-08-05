@@ -40,6 +40,7 @@ import SwiftUI
             deleteHistoryUseCase: DeleteHistoryUseCase(
                 repository: repository
             )
-        )
+        ),
+        makeSettingsViewModel: { SettingsViewModel() }
     )
 }

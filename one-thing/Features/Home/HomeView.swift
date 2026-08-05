@@ -5,18 +5,19 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: HomeViewModel
     @State private var historyViewModel: HistoryViewModel
-    private let notificationUseCase: NotificationUseCase?
+    private let makeSettingsViewModel: () -> SettingsViewModel
     @State private var presentedSheet: HomeSheet?
 
-    /// ホーム画面で利用する ViewModel を受け取る。
+    /// ホーム画面で利用する ViewModel と、設定シートを開くたびに使う ViewModel の生成方法を受け取る。
+    /// 設定シートの依存を外から渡すことで、Preview から実際の設定や通知許可へ触れないようにする。
     init(
         viewModel: HomeViewModel,
         historyViewModel: HistoryViewModel,
-        notificationUseCase: NotificationUseCase? = nil
+        makeSettingsViewModel: @escaping () -> SettingsViewModel
     ) {
         self.viewModel = viewModel
         self.historyViewModel = historyViewModel
-        self.notificationUseCase = notificationUseCase
+        self.makeSettingsViewModel = makeSettingsViewModel
     }
 
     var body: some View {
@@ -92,7 +93,7 @@ struct HomeView: View {
         case .history:
             HistoryView(viewModel: historyViewModel)
         case .settings:
-            SettingsView(viewModel: SettingsViewModel(notificationUseCase: notificationUseCase))
+            SettingsView(viewModel: makeSettingsViewModel())
         #if DEBUG
         case .debugMenu:
             DebugMenuView(viewModel: viewModel)
