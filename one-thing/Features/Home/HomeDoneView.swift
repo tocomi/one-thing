@@ -93,12 +93,24 @@ struct HomeDoneView: View {
 
 // Reduce Motion は読み取り専用の環境値で Preview から注入できないため、
 // 実機・シミュレータの「設定 > アクセシビリティ > 動作」で切り替えて確認する。
-#Preview {
+#if DEBUG
+#Preview("完了直後") {
     HomeDoneView(
         thing: ThingSnapshot(title: "散歩する", status: .done),
-        dateText: "5月7日 (木)",
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
         message: "ひとつ、できた。",
         isAnimationVisible: true
     )
     .background(Color.appBackground)
 }
+
+#Preview("完了後の再表示") {
+    HomeDoneView(
+        thing: ThingSnapshot(title: "散歩する", status: .done),
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        message: "今日の自分を、ちゃんと褒めて。",
+        isAnimationVisible: false
+    )
+    .background(Color.appBackground)
+}
+#endif

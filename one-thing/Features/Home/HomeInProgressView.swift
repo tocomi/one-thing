@@ -126,12 +126,13 @@ struct HomeInProgressView: View {
     }
 }
 
-#Preview {
+#if DEBUG
+#Preview("表示中") {
     @Previewable @State var editingTitle = ""
 
     HomeInProgressView(
         thing: ThingSnapshot(title: "散歩する", status: .inProgress),
-        dateText: "5月7日 (木)",
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
         editingTitle: $editingTitle,
         isEditingTitle: false,
         canSaveEditingTitle: false,
@@ -143,3 +144,40 @@ struct HomeInProgressView: View {
     )
     .background(Color.appBackground)
 }
+
+#Preview("編集中") {
+    @Previewable @State var editingTitle = "散歩する"
+
+    HomeInProgressView(
+        thing: ThingSnapshot(title: "散歩する", status: .inProgress),
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        editingTitle: $editingTitle,
+        isEditingTitle: true,
+        canSaveEditingTitle: true,
+        isSubmitting: false,
+        startEditingTitle: {},
+        cancelEditingTitle: {},
+        saveEditingTitle: {},
+        completeThing: {}
+    )
+    .background(Color.appBackground)
+}
+
+#Preview("編集中（保存できない）") {
+    @Previewable @State var editingTitle = ""
+
+    HomeInProgressView(
+        thing: ThingSnapshot(title: "散歩する", status: .inProgress),
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        editingTitle: $editingTitle,
+        isEditingTitle: true,
+        canSaveEditingTitle: false,
+        isSubmitting: false,
+        startEditingTitle: {},
+        cancelEditingTitle: {},
+        saveEditingTitle: {},
+        completeThing: {}
+    )
+    .background(Color.appBackground)
+}
+#endif

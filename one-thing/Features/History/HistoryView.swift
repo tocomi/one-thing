@@ -192,26 +192,4 @@ struct HistoryView: View {
     }
 }
 
-#Preview {
-    let calendar = Calendar.autoupdatingCurrent
-    let today = calendar.startOfDay(for: Date())
-    let repository = InMemoryThingRepository(
-        things: [
-            Thing(date: today, title: "散歩する", status: .done),
-            Thing(date: calendar.date(byAdding: .day, value: -1, to: today) ?? today, title: "本を読む", status: .rested)
-        ]
-    )
-
-    HistoryView(
-        viewModel: HistoryViewModel(
-            loadHistoryUseCase: LoadHistoryUseCase(repository: repository),
-            loadEarliestHistoryDateUseCase: LoadEarliestHistoryDateUseCase(repository: repository),
-            editHistoryUseCase: EditHistoryUseCase(
-                repository: repository
-            ),
-            deleteHistoryUseCase: DeleteHistoryUseCase(
-                repository: repository
-            )
-        )
-    )
-}
+// Preview は状態ごとに用意しているため HistoryViewPreview.swift にまとめている。

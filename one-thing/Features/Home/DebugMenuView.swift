@@ -43,17 +43,8 @@ struct DebugMenuView: View {
 }
 
 #Preview {
-    let repository = InMemoryThingRepository()
     DebugMenuView(
-        viewModel: HomeViewModel(
-            loadOneThingUseCase: LoadOneThingUseCase(repository: repository),
-            setOneThingUseCase: SetOneThingUseCase(repository: repository),
-            completeOneThingUseCase: CompleteOneThingUseCase(repository: repository),
-            autoRestUseCase: AutoRestUseCase(repository: repository),
-            resetThingDataUseCase: ResetThingDataUseCase(repository: repository),
-            suggestThingsUseCase: SuggestThingsUseCase(repository: repository),
-            generateDebugHistoryUseCase: GenerateDebugHistoryUseCase(repository: repository)
-        )
+        viewModel: HomePreview.makeViewModel(repository: PreviewThingSeed.makeRecordedRepository())
     )
 }
 #endif

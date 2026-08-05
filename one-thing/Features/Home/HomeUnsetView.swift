@@ -187,3 +187,53 @@ private struct FlowLayoutRow {
         items.append(item)
     }
 }
+
+#if DEBUG
+#Preview("候補あり") {
+    @Previewable @State var draftTitle = ""
+
+    HomeUnsetView(
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        promptText: "今日は何をする？",
+        draftTitle: $draftTitle,
+        suggestions: ["散歩する", "本を読む", "日記を書く"],
+        canSubmitDraft: false,
+        isSubmitting: false,
+        selectSuggestion: { draftTitle = $0 },
+        submitDraft: {}
+    )
+    .background(Color.appBackground)
+}
+
+#Preview("候補なし") {
+    @Previewable @State var draftTitle = ""
+
+    HomeUnsetView(
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        promptText: "今日やること、決めた？",
+        draftTitle: $draftTitle,
+        suggestions: [],
+        canSubmitDraft: false,
+        isSubmitting: false,
+        selectSuggestion: { draftTitle = $0 },
+        submitDraft: {}
+    )
+    .background(Color.appBackground)
+}
+
+#Preview("入力済み") {
+    @Previewable @State var draftTitle = "散歩する"
+
+    HomeUnsetView(
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        promptText: "今日は何をする？",
+        draftTitle: $draftTitle,
+        suggestions: ["散歩する", "本を読む", "日記を書く"],
+        canSubmitDraft: true,
+        isSubmitting: false,
+        selectSuggestion: { draftTitle = $0 },
+        submitDraft: {}
+    )
+    .background(Color.appBackground)
+}
+#endif

@@ -17,6 +17,7 @@
 - `one-thing/Data`: API、永続化、リポジトリ実装。
 - `one-thing/DesignSystem`: 再利用可能な UI コンポーネントとデザイントークン。
 - `one-thing/Features`: feature 固有の View と ViewModel。
+- `one-thing/PreviewSupport`: Preview 専用の固定 Calendar・シードデータ・失敗するリポジトリ。すべて `#if DEBUG` で囲う。
 - `one-thing-widget`: ウィジェット Extension。`DesignSystem` などアプリ側のファイルは Target Membership で共有する。
 - `one-thingTests`: ユニットテスト（`Support` に fake やテスト用ヘルパー、`UseCase` と `ViewModel` にテスト本体）。
 
@@ -33,6 +34,13 @@
 - 日付に依存するテストでは `TestClock` の固定 Calendar を使い、実行環境に依存させない。
 - UI テストは重要なフローに絞る。
 - テストは `xcodebuild test -scheme one-thing -destination 'platform=iOS Simulator,name=iPhone 17'` で実行する。
+
+## Preview
+- 画面の主要な状態には Preview を用意する。状態ごとに `#Preview("進行中")` のように名前を付ける。
+- 画面全体（`HomeView` / `HistoryView` / `SettingsView`）の Preview は `<View 名>Preview.swift` にまとめ、View 本体には置かない。
+- Preview 用データは `PreviewSupport` の `PreviewClock` / `PreviewThingSeed` / `PreviewUserDefaults` から取り、production の値（`UserDefaults.standard` や実行日）を使わない。
+- エラー表示の確認には `PreviewFailingThingRepository`、通知許可の確認には `PreviewNotificationAuthorizing` を使う。Preview から OS の許可ダイアログを出さない。
+- View が内部で ViewModel を作ると Preview から依存を差し替えられないため、シートの ViewModel は生成クロージャで外から渡す（`HomeView.makeSettingsViewModel`）。
 
 ## Lint / Format
 - SwiftLint と SwiftFormat でコードスタイルを固定する。設定はリポジトリ直下の `.swiftlint.yml` と `.swiftformat`。

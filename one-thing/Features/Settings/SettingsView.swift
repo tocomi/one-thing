@@ -92,6 +92,4 @@ struct SettingsView: View {
     }
 }
 
-#Preview {
-    SettingsView(viewModel: SettingsViewModel())
-}
+// Preview は状態ごとに用意しているため SettingsViewPreview.swift にまとめている。

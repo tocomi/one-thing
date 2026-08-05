@@ -167,14 +167,39 @@ struct HistoryDetailView: View {
     }
 }
 
-#Preview {
+#if DEBUG
+/// Preview で使う「今日」のセル。日付・曜日・`isToday` を固定した現在時刻に合わせる。
+private func previewTodayCell(thing: ThingSnapshot?) -> HistoryCalendarDay {
+    HistoryCalendarDay(
+        date: PreviewClock.today,
+        dayNumber: PreviewClock.calendar.component(.day, from: PreviewClock.today),
+        thing: thing,
+        isToday: true,
+        isFuture: false
+    )
+}
+
+#Preview("記録あり") {
     HistoryDetailView(
-        dateText: "5月8日 (金)",
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        day: previewTodayCell(thing: ThingSnapshot(title: "散歩する", status: .done)),
+        isSaving: false,
+        errorMessage: nil,
+        save: { _, _, _ in true },
+        delete: { _ in true }
+    )
+}
+
+#Preview("記録なし") {
+    let date = PreviewClock.daysAgo(4)
+
+    HistoryDetailView(
+        dateText: PreviewClock.dayText(for: date),
         day: HistoryCalendarDay(
-            date: Date(),
-            dayNumber: 8,
-            thing: ThingSnapshot(title: "散歩する", status: .done),
-            isToday: true,
+            date: date,
+            dayNumber: PreviewClock.calendar.component(.day, from: date),
+            thing: nil,
+            isToday: false,
             isFuture: false
         ),
         isSaving: false,
@@ -183,3 +208,26 @@ struct HistoryDetailView: View {
         delete: { _ in true }
     )
 }
+
+#Preview("保存エラー") {
+    HistoryDetailView(
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        day: previewTodayCell(thing: ThingSnapshot(title: "散歩する", status: .done)),
+        isSaving: false,
+        errorMessage: "やったことを入力してください。",
+        save: { _, _, _ in false },
+        delete: { _ in false }
+    )
+}
+
+#Preview("保存中") {
+    HistoryDetailView(
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        day: previewTodayCell(thing: ThingSnapshot(title: "散歩する", status: .done)),
+        isSaving: true,
+        errorMessage: nil,
+        save: { _, _, _ in true },
+        delete: { _ in true }
+    )
+}
+#endif
