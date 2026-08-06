@@ -74,14 +74,7 @@ struct HistoryDayCell: View {
             return "\(dayNumber)日 未来"
         }
 
-        switch day.thing?.status {
-        case .done:
-            return "\(dayNumber)日 できた"
-        case .rested:
-            return "\(dayNumber)日 休んだ"
-        default:
-            return "\(dayNumber)日 記録なし"
-        }
+        return "\(dayNumber)日 \(HistoryResultText.text(for: day.thing?.status))"
     }
 
     private var textColor: Color {

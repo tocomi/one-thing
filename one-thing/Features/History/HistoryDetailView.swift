@@ -98,7 +98,7 @@ struct HistoryDetailView: View {
                 .font(.system(.title3, design: .rounded, weight: .semibold))
                 .foregroundStyle(Color.appPrimary)
 
-            Text(resultText(for: day.thing?.status))
+            Text(HistoryResultText.text(for: day.thing?.status))
                 .font(.system(.subheadline, design: .rounded, weight: .medium))
                 .foregroundStyle(Color.appSecondary)
         }
@@ -151,38 +151,29 @@ struct HistoryDetailView: View {
         }
     }
 
-    private func resultText(for status: ThingStatus?) -> String {
-        switch status {
-        case .done:
-            "できた"
-        case .rested:
-            "休んだ"
-        default:
-            "記録なし"
-        }
-    }
-
     private static func editableStatus(for status: ThingStatus?) -> ThingStatus {
         status == .done ? .done : .rested
     }
 }
 
 #if DEBUG
-/// Preview で使う「今日」のセル。日付・曜日・`isToday` を固定した現在時刻に合わせる。
-private func previewTodayCell(thing: ThingSnapshot?) -> HistoryCalendarDay {
-    HistoryCalendarDay(
-        date: PreviewClock.today,
-        dayNumber: PreviewClock.calendar.component(.day, from: PreviewClock.today),
+/// Preview で使う過去日のセル。編集できるのは過去の日だけのため、この View の Preview も過去日で作る。
+private func previewPastCell(daysAgo: Int, thing: ThingSnapshot?) -> HistoryCalendarDay {
+    let date = PreviewClock.daysAgo(daysAgo)
+
+    return HistoryCalendarDay(
+        date: date,
+        dayNumber: PreviewClock.calendar.component(.day, from: date),
         thing: thing,
-        isToday: true,
+        isToday: false,
         isFuture: false
     )
 }
 
 #Preview("記録あり") {
     HistoryDetailView(
-        dateText: PreviewClock.dayText(for: PreviewClock.today),
-        day: previewTodayCell(thing: ThingSnapshot(title: "散歩する", status: .done)),
+        dateText: PreviewClock.dayText(for: PreviewClock.daysAgo(1)),
+        day: previewPastCell(daysAgo: 1, thing: ThingSnapshot(title: "散歩する", status: .done)),
         isSaving: false,
         errorMessage: nil,
         save: { _, _, _ in true },
@@ -191,17 +182,9 @@ private func previewTodayCell(thing: ThingSnapshot?) -> HistoryCalendarDay {
 }
 
 #Preview("記録なし") {
-    let date = PreviewClock.daysAgo(4)
-
     HistoryDetailView(
-        dateText: PreviewClock.dayText(for: date),
-        day: HistoryCalendarDay(
-            date: date,
-            dayNumber: PreviewClock.calendar.component(.day, from: date),
-            thing: nil,
-            isToday: false,
-            isFuture: false
-        ),
+        dateText: PreviewClock.dayText(for: PreviewClock.daysAgo(4)),
+        day: previewPastCell(daysAgo: 4, thing: nil),
         isSaving: false,
         errorMessage: nil,
         save: { _, _, _ in true },
@@ -211,8 +194,8 @@ private func previewTodayCell(thing: ThingSnapshot?) -> HistoryCalendarDay {
 
 #Preview("保存エラー") {
     HistoryDetailView(
-        dateText: PreviewClock.dayText(for: PreviewClock.today),
-        day: previewTodayCell(thing: ThingSnapshot(title: "散歩する", status: .done)),
+        dateText: PreviewClock.dayText(for: PreviewClock.daysAgo(1)),
+        day: previewPastCell(daysAgo: 1, thing: ThingSnapshot(title: "散歩する", status: .done)),
         isSaving: false,
         errorMessage: "やったことを入力してください。",
         save: { _, _, _ in false },
@@ -222,8 +205,8 @@ private func previewTodayCell(thing: ThingSnapshot?) -> HistoryCalendarDay {
 
 #Preview("保存中") {
     HistoryDetailView(
-        dateText: PreviewClock.dayText(for: PreviewClock.today),
-        day: previewTodayCell(thing: ThingSnapshot(title: "散歩する", status: .done)),
+        dateText: PreviewClock.dayText(for: PreviewClock.daysAgo(1)),
+        day: previewPastCell(daysAgo: 1, thing: ThingSnapshot(title: "散歩する", status: .done)),
         isSaving: true,
         errorMessage: nil,
         save: { _, _, _ in true },

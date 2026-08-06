@@ -35,6 +35,16 @@ enum PreviewThingSeed {
         )
     }
 
+    /// 今日の記録が「休んだ」になっているリポジトリを作る。
+    /// ホームがこれを完了として扱わないこと（未設定表示に戻ること）の確認に使う。
+    static func makeRestedTodayRepository() -> InMemoryThingRepository {
+        InMemoryThingRepository(
+            things: pastThings() + [
+                Thing(date: PreviewClock.today, title: "散歩する", status: .rested)
+            ]
+        )
+    }
+
     /// 履歴カレンダーと候補表示のもとになる過去の記録。
     /// 「今日」からの相対日で置くことで、`PreviewClock` の基準日を変えても同じ並びになる。
     /// 18 日前まで遡るため、月初が基準日でも前月のページに記録が残る。

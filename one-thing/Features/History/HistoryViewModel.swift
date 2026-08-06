@@ -22,9 +22,10 @@ final class HistoryViewModel {
 
     private let loadHistoryUseCase: LoadHistoryUseCase
     private let loadEarliestHistoryDateUseCase: LoadEarliestHistoryDateUseCase
-    private let editHistoryUseCase: EditHistoryUseCase
-    private let deleteHistoryUseCase: DeleteHistoryUseCase
-    private let calendar: Calendar
+    // 日次編集は HistoryViewModel+DayEditing.swift に分けているため、そこから参照できるようにしている。
+    let editHistoryUseCase: EditHistoryUseCase
+    let deleteHistoryUseCase: DeleteHistoryUseCase
+    let calendar: Calendar
     private let userDefaults: UserDefaults
     private let dayBoundaryUseCase: DayBoundaryUseCase
     private let monthCache = HistoryMonthCache()
@@ -163,49 +164,6 @@ final class HistoryViewModel {
         dayFormatter.string(from: date)
     }
 
-    /// 選択中の日の履歴を保存し、その月のカレンダーを更新する。
-    func saveHistoryDay(date: Date, title: String, status: ThingStatus) async -> Bool {
-        isSaving = true
-        errorMessage = nil
-        defer { isSaving = false }
-
-        do {
-            let result = try await editHistoryUseCase.execute(
-                date: calendar.startOfDay(for: date),
-                title: title,
-                status: status
-            )
-            await loadMonth(displayedMonth, force: true)
-            selectedDay = days(for: displayedMonth)?.first {
-                guard let dayDate = $0.date else {
-                    return false
-                }
-                return calendar.isDate(dayDate, inSameDayAs: result.thing.date)
-            }
-            return true
-        } catch {
-            errorMessage = historyErrorMessage(for: error)
-            return false
-        }
-    }
-
-    /// 選択中の日の履歴を削除し、その月のカレンダーを更新する。
-    func deleteHistoryDay(date: Date) async -> Bool {
-        isSaving = true
-        errorMessage = nil
-        defer { isSaving = false }
-
-        do {
-            try await deleteHistoryUseCase.execute(date: calendar.startOfDay(for: date))
-            await loadMonth(displayedMonth, force: true)
-            selectedDay = nil
-            return true
-        } catch {
-            errorMessage = error.localizedDescription
-            return false
-        }
-    }
-
     /// 最も古い記録が既定の下限より古ければ、その月まで月ページを広げる。
     private func resolveMonthRangeIfNeeded() async {
         guard !isMonthRangeResolved else {
@@ -238,7 +196,8 @@ final class HistoryViewModel {
     }
 
     /// 指定した月を読み込む。取得済みの月は `force` を指定したときだけ読み直す。
-    private func loadMonth(_ month: Date, force: Bool) async {
+    /// 保存・削除のあとに読み直すため、日次編集の拡張からも呼べるようにしている。
+    func loadMonth(_ month: Date, force: Bool) async {
         if !force, monthCache.days(for: month) != nil {
             return
         }
@@ -268,20 +227,8 @@ final class HistoryViewModel {
         HistoryMonthRange.monthStart(of: date, calendar: calendar)
     }
 
-    private func historyErrorMessage(for error: Error) -> String {
-        guard let error = error as? EditHistoryUseCaseError else {
-            return error.localizedDescription
-        }
-
-        switch error {
-        case .emptyTitle:
-            return "やったことを入力してください。"
-        case .noChanges:
-            return "変更する内容がありません。"
-        }
-    }
-
-    private func appToday() -> Date {
+    /// アプリ上の「今日」を返す。日次編集の可否判定でも使うため、拡張から参照できるようにしている。
+    func appToday() -> Date {
         dayBoundaryUseCase.execute(
             now: nowProvider(),
             dayBoundaryMinutes: Self.dayBoundaryMinutes(in: userDefaults)

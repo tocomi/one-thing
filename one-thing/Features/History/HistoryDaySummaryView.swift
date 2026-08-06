@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// カレンダーから選んだ日の記録を読み取り専用で表示する。
+/// 履歴で編集できるのは過去の日だけのため、今日を選んだときはこの表示になる。
 struct HistoryDaySummaryView: View {
     @Environment(\.dismiss) private var dismiss
     let dateText: String
@@ -31,7 +32,7 @@ struct HistoryDaySummaryView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(32)
             .background(Color.appBackground.ignoresSafeArea())
-            .navigationTitle("これまで")
+            .navigationTitle("日次詳細")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -44,20 +45,29 @@ struct HistoryDaySummaryView: View {
     }
 
     private var resultText: String {
-        switch thing?.status {
-        case .done:
-            "できた"
-        case .rested:
-            "休んだ"
-        default:
-            "記録なし"
-        }
+        HistoryResultText.text(for: thing?.status)
     }
 }
 
-#Preview {
+#if DEBUG
+#Preview("今日・できた") {
     HistoryDaySummaryView(
-        dateText: "5月8日 (金)",
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
         thing: ThingSnapshot(title: "散歩する", status: .done)
     )
 }
+
+#Preview("今日・進行中") {
+    HistoryDaySummaryView(
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        thing: ThingSnapshot(title: "散歩する", status: .inProgress)
+    )
+}
+
+#Preview("記録なし") {
+    HistoryDaySummaryView(
+        dateText: PreviewClock.dayText(for: PreviewClock.today),
+        thing: nil
+    )
+}
+#endif

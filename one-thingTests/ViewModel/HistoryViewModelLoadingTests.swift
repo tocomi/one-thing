@@ -200,16 +200,19 @@ struct HistoryViewModelLoadingTests {
         let repository = FakeThingRepository()
         let viewModel = makeHistoryViewModel(repository: repository)
         await viewModel.loadDisplayedMonthIfNeeded()
+        // 基準にしている今日は 8 月 1 日のため、編集できる過去日を持つ前月を表示する。
+        viewModel.moveToPreviousMonth()
+        await viewModel.loadDisplayedMonthIfNeeded()
 
         let saved = await viewModel.saveHistoryDay(
-            date: TestClock.day(2026, 8, 2),
+            date: TestClock.day(2026, 7, 2),
             title: "散歩する",
             status: .done
         )
 
         #expect(saved)
-        #expect(repository.fetchRanges.count == 2)
-        #expect(viewModel.days(for: TestClock.day(2026, 8, 1))?
+        #expect(repository.fetchRanges.count == 3)
+        #expect(viewModel.days(for: TestClock.day(2026, 7, 1))?
             .first { $0.thing != nil }?.thing?.title == "散歩する")
         #expect(viewModel.selectedDay?.thing?.title == "散歩する")
     }

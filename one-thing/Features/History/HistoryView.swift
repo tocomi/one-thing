@@ -30,20 +30,7 @@ struct HistoryView: View {
                 await viewModel.loadDisplayedMonthIfNeeded()
             }
             .sheet(item: $viewModel.selectedDay) { day in
-                HistoryDetailView(
-                    dateText: day.date.map { viewModel.dayText(for: $0) } ?? "",
-                    day: day,
-                    isSaving: viewModel.isSaving,
-                    errorMessage: viewModel.errorMessage
-                ) { date, title, status in
-                    await viewModel.saveHistoryDay(
-                        date: date,
-                        title: title,
-                        status: status
-                    )
-                } delete: { date in
-                    await viewModel.deleteHistoryDay(date: date)
-                }
+                daySheet(for: day)
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -54,6 +41,31 @@ struct HistoryView: View {
             }
             .navigationTitle("これまで")
             .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    /// 選んだ日のシートを組み立てる。編集できない今日は読み取り専用の表示にする。
+    @ViewBuilder
+    private func daySheet(for day: HistoryCalendarDay) -> some View {
+        let dateText = day.date.map { viewModel.dayText(for: $0) } ?? ""
+
+        if viewModel.isEditable(day) {
+            HistoryDetailView(
+                dateText: dateText,
+                day: day,
+                isSaving: viewModel.isSaving,
+                errorMessage: viewModel.errorMessage
+            ) { date, title, status in
+                await viewModel.saveHistoryDay(
+                    date: date,
+                    title: title,
+                    status: status
+                )
+            } delete: { date in
+                await viewModel.deleteHistoryDay(date: date)
+            }
+        } else {
+            HistoryDaySummaryView(dateText: dateText, thing: day.thing)
         }
     }
 

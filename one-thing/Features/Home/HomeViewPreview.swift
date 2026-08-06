@@ -68,6 +68,11 @@ enum HomePreview {
     HomePreview.makeView(repository: PreviewThingSeed.makeDoneRepository())
 }
 
+// 今日が「休んだ」の記録でも完了扱いにはせず、未設定として決め直せる状態を確認する。
+#Preview("今日が休んだ") {
+    HomePreview.makeView(repository: PreviewThingSeed.makeRestedTodayRepository())
+}
+
 // 編集中は読み込みのたびに解除される一時状態のため、HomeView 経由では固定できない。
 // 入力欄と操作ボタンの見え方は HomeInProgressView の Preview で確認する。
 

@@ -261,11 +261,12 @@ final class HomeViewModel {
     /// 今日の Thing と候補、完了メッセージを読み込んで画面状態へ反映する。
     /// 初回読み込みと再読み込みで同じ結果になるよう、両方からこの処理を通す。
     private func applyTodayState(now: Date, boundaryMinutes: Int) async throws {
-        thing = try await loadOneThingUseCase.execute(
+        let loaded = try await loadOneThingUseCase.execute(
             now: now,
             dayBoundaryMinutes: boundaryMinutes
         )
         .map(ThingSnapshot.init)
+        thing = displayedThing(loaded)
         suggestions = thing == nil
             ? try await suggestThingsUseCase.execute(
                 now: now,
@@ -274,6 +275,20 @@ final class HomeViewModel {
             : []
         if let thing, thing.status == .done {
             updateCompletionMessage(for: thing.id)
+        }
+    }
+
+    /// ホーム画面に出す今日の Thing を返す。出さない記録は未設定と同じ nil に寄せる。
+    ///
+    /// 「休んだ」は日付が切り替わるときに前日へ付く結果で、今日に残っていても完了として見せる状態ではない。
+    /// 履歴から今日を書き換えられなくしてもデータとしては起こりうるため、ここで未設定に正規化し、
+    /// 完了演出や完了メッセージではなく今日のことを決め直す画面を出す。
+    private func displayedThing(_ thing: ThingSnapshot?) -> ThingSnapshot? {
+        switch thing?.status {
+        case .inProgress, .done:
+            thing
+        default:
+            nil
         }
     }
 
